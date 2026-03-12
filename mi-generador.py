@@ -18,6 +18,8 @@ def main():
         "  server:",
         "    container_name: server",
         "    image: server:latest",
+        "    volumes:",
+        "      - ./server/config.ini:/etc/server/config.ini",
         "    entrypoint: python3 /main.py",
         "    environment:",
         "      - PYTHONUNBUFFERED=1",
@@ -31,6 +33,8 @@ def main():
         content.append(f"  client{i}:")
         content.append(f"    container_name: client{i}")
         content.append(f"    image: client:latest")
+        content.append(f"    volumes:")
+        content.append(f"      - ./client/config.yaml:/etc/client/config.yaml")
         content.append(f"    entrypoint: /client")
         content.append(f"    environment:")
         content.append(f"      - CLI_ID={i}")
