@@ -23,7 +23,6 @@ def main():
         "    entrypoint: python3 /main.py",
         "    environment:",
         "      - PYTHONUNBUFFERED=1",
-        "      - LOGGING_LEVEL=DEBUG",
         "    networks:",
         "      - testing_net",
         ""
@@ -38,7 +37,6 @@ def main():
         content.append(f"    entrypoint: /client")
         content.append(f"    environment:")
         content.append(f"      - CLI_ID={i}")
-        content.append(f"      - CLI_LOG_LEVEL=DEBUG")
         content.append(f"    networks:")
         content.append(f"      - testing_net")
         content.append(f"    depends_on:")
