@@ -19,7 +19,7 @@ def main():
         "    container_name: server",
         "    image: server:latest",
         "    volumes:",
-        "      - ./server/config.ini:config.ini",
+        "      - ./server/config.ini:/config.ini",
         "    entrypoint: python3 /main.py",
         "    environment:",
         "      - PYTHONUNBUFFERED=1",
