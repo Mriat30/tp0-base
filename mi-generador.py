@@ -52,8 +52,14 @@ def main():
         "        - subnet: 172.25.125.0/24"
     ])
 
-    with open(output_file, 'w') as f:
-        f.write("\n".join(content) + "\n")
+    try:
+        with open(output_file, 'w') as f:
+            for line in content:
+                f.write(line + "\n")
+        print(f"Éxito: Archivo '{output_file}' generado correctamente.")
+    except OSError as e:
+        print(f"Error: No se pudo escribir en el archivo '{output_file}': {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
