@@ -32,6 +32,7 @@ class Server:
             if client_sock is not None:
                 self.__handle_client_connection(client_sock)
         logging.info("action: graceful_shutdown | result: success")
+        self._server_socket.close()
 
     def __handle_client_connection(self, client_sock):
         """
