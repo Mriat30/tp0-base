@@ -1,13 +1,18 @@
 import socket
 import logging
+import signal
 
 
 class Server:
-    def __init__(self, port, listen_backlog):
+    def __init__(self, port, listen_backlog, accept_timeout):
         # Initialize server socket
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
+        self._server_socket.settimeout(accept_timeout)
+        self._should_be_running = False
+        signal.signal(signal.SIGTERM, self.__handle_sigterm)
+
 
     def run(self):
         """
@@ -18,11 +23,12 @@ class Server:
         finishes, servers starts to accept new connections again
         """
 
-        # TODO: Modify this program to handle signal to graceful shutdown
-        # the server
-        while True:
+        self._should_be_running = True
+        while self._should_be_running:
             client_sock = self.__accept_new_connection()
-            self.__handle_client_connection(client_sock)
+            if client_sock is not None:
+                self.__handle_client_connection(client_sock)
+        logging.info("action: graceful_shutdown | result: success")
 
     def __handle_client_connection(self, client_sock):
         """
@@ -52,7 +58,15 @@ class Server:
         """
 
         # Connection arrived
-        logging.info('action: accept_connections | result: in_progress')
-        c, addr = self._server_socket.accept()
-        logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
-        return c
+        try:
+            logging.info('action: accept_connections | result: in_progress')
+            c, addr = self._server_socket.accept()
+            logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
+            return c
+        except socket.timeout:
+            logging.info('action: accept_connections | result: timeout')
+            return None
+
+    def __handle_sigterm(self, signum, frame):
+        logging.info("action: graceful_shutdown | result: in_progress")
+        self._should_be_running = False
