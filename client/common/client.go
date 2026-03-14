@@ -60,7 +60,7 @@ func (c *Client) StartClientLoop() {
 	// Messages if the message amount threshold has not been surpassed
 	c.should_be_running = true
 	c.handleSigterm()
-	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
+	for msgID := 1; msgID <= c.config.LoopAmount && c.should_be_running; msgID++ {
 		// Create the connection the server in every loop iteration. Send an
 		c.createClientSocket()
 
