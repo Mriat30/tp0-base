@@ -7,12 +7,13 @@ class Server:
 
     _DEFAULT_ACCEPT_TIMEOUT = 2.0
 
-    def __init__(self, port, listen_backlog, accept_timeout = _DEFAULT_ACCEPT_TIMEOUT):
+    def __init__(self, port, listen_backlog, accept_timeout = None):
         # Initialize server socket
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
-        self._server_socket.settimeout(accept_timeout)
+        if accept_timeout is not None:
+            self._server_socket.settimeout(accept_timeout)
         self._should_be_running = False
         signal.signal(signal.SIGTERM, self.__handle_sigterm)
 
