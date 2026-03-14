@@ -4,7 +4,10 @@ import signal
 
 
 class Server:
-    def __init__(self, port, listen_backlog, accept_timeout):
+
+    _DEFAULT_ACCEPT_TIMEOUT = 2.0
+
+    def __init__(self, port, listen_backlog, accept_timeout = _DEFAULT_ACCEPT_TIMEOUT):
         # Initialize server socket
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))

@@ -5,7 +5,6 @@ from common.server import Server
 import logging
 import os
 
-
 def initialize_config():
     """ Parse env variables or config file to find program config params
 
@@ -26,7 +25,8 @@ def initialize_config():
         config_params["port"] = int(os.getenv('SERVER_PORT', config["DEFAULT"]["SERVER_PORT"]))
         config_params["listen_backlog"] = int(os.getenv('SERVER_LISTEN_BACKLOG', config["DEFAULT"]["SERVER_LISTEN_BACKLOG"]))
         config_params["logging_level"] = os.getenv('LOGGING_LEVEL', config["DEFAULT"]["LOGGING_LEVEL"])
-        config_params["accept_timeout"] = int(os.getenv('ACCEPT_TIMEOUT', config["DEFAULT"]["ACCEPT_TIMEOUT"]))
+        raw_timeout = os.getenv('ACCEPT_TIMEOUT', config["DEFAULT"].get("ACCEPT_TIMEOUT"))
+        config_params["accept_timeout"] = float(raw_timeout) if raw_timeout is not None else None
     except KeyError as e:
         raise KeyError("Key was not found. Error: {} .Aborting server".format(e))
     except ValueError as e:
