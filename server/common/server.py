@@ -12,8 +12,9 @@ class Server:
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
-        if accept_timeout is not None:
-            self._server_socket.settimeout(self._DEFAULT_ACCEPT_TIMEOUT)
+        if accept_timeout is None:
+            accept_timeout = self._DEFAULT_ACCEPT_TIMEOUT
+        self._server_socket.settimeout(accept_timeout)
         self._should_be_running = False
         signal.signal(signal.SIGTERM, self.__handle_sigterm)
 
