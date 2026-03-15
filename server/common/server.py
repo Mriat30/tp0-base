@@ -16,6 +16,7 @@ class Server:
             accept_timeout = self._DEFAULT_ACCEPT_TIMEOUT
         self._server_socket.settimeout(accept_timeout)
         self._should_be_running = False
+        self.client = None
         signal.signal(signal.SIGTERM, self.__handle_sigterm)
 
 
@@ -30,30 +31,34 @@ class Server:
 
         self._should_be_running = True
         while self._should_be_running:
-            client_sock = self.__accept_new_connection()
-            if client_sock is not None:
-                self.__handle_client_connection(client_sock)
+            self.client = self.__accept_new_connection()
+            if self.client is not None:
+                self.__handle_client_connection()
         logging.info("action: graceful_shutdown | result: success")
-        self._server_socket.close()
+        self.__stop()
 
-    def __handle_client_connection(self, client_sock):
+    def __handle_client_connection(self):
         """
         Read message from a specific client socket and closes the socket
 
         If a problem arises in the communication with the client, the
         client socket will also be closed
         """
+        client = self.client
+        if client is None:
+            return
+
         try:
             # TODO: Modify the receive to avoid short-reads
-            msg = client_sock.recv(1024).rstrip().decode('utf-8')
-            addr = client_sock.getpeername()
+            msg = client.recv(1024).rstrip().decode('utf-8')
+            addr = client.getpeername()
             logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {msg}')
             # TODO: Modify the send to avoid short-writes
-            client_sock.send("{}\n".format(msg).encode('utf-8'))
+            client.send("{}\n".format(msg).encode('utf-8'))
         except OSError as e:
-            logging.error("action: receive_message | result: fail | error: {e}")
+            logging.error(f"action: receive_message | result: fail | error: {e}")
         finally:
-            client_sock.close()
+            self.__clear()
 
     def __accept_new_connection(self):
         """
@@ -75,3 +80,18 @@ class Server:
     def __handle_sigterm(self, signum, frame):
         logging.info("action: graceful_shutdown | result: in_progress")
         self._should_be_running = False
+    
+    def __stop(self):
+        logging.info("action: graceful_shutdown | result: in_progress")
+        self.__clear()
+        self._server_socket.close()
+        logging.info("action: graceful_shutdown | result: success")
+
+    def __clear(self):
+        client = self.client
+        if client is None:
+            return
+        else:
+            client.shutdown(socket.SHUT_RDWR)
+            client.close()
+            self.client = None
