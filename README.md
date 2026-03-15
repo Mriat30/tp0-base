@@ -133,6 +133,8 @@ Se deberá implementar un módulo de comunicación entre el cliente y el servido
 * Correcta separación de responsabilidades entre modelo de dominio y capa de comunicación.
 * Correcto empleo de sockets, incluyendo manejo de errores y evitando los fenómenos conocidos como [_short read y short write_](https://cs61.seas.harvard.edu/site/2018/FileDescriptors/).
 
+#### Explicacion de la solucion
+Lo primero que hice fue crear el folder *model* para separar la logica de negocio de la logica de comunicacion. Dentro de *model* coloque el archivo *utils.py* (que luego lo renombree a *bet.py* para ser mas representativo)
 
 ### Ejercicio N°6:
 Modificar los clientes para que envíen varias apuestas a la vez (modalidad conocida como procesamiento por _chunks_ o _batchs_). 
