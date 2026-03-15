@@ -1,8 +1,8 @@
-from common.utils import *
+from model.bet import *
 import os
 import unittest
 
-class TestUtils(unittest.TestCase):
+class TestBet(unittest.TestCase):
 
     def tearDown(self):
         if os.path.exists(STORAGE_FILEPATH):
