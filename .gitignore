@@ -3,3 +3,8 @@
 
 # Executables
 bin/
+
+# Ignora todos los pycache generado por pytest
+__pycache__/
+*.py[cod]
+*$py.class
