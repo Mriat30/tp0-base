@@ -2,7 +2,7 @@ from enum import Enum
 
 class ActionType(Enum):
     REGISTER_SINGLE_BET = 0x01
-    
+
     @classmethod
     def from_bytes(cls, raw_bytes):
         """
@@ -10,7 +10,7 @@ class ActionType(Enum):
         Lanza ValueError si el byte no corresponde a ninguna acción.
         """
         if not raw_bytes:
-            return None
+            raise ValueError("No se recibieron bytes")
         
         value = int.from_bytes(raw_bytes, byteorder='big')
 
