@@ -47,5 +47,13 @@ class TestProtocol(unittest.TestCase):
             self.assertEqual(bet.birthdate, datetime.date.fromisoformat('2000-01-01'))
             self.assertEqual(bet.number, 7574)
 
+    def test_read_bet_client_disconnection(self):
+        socket = MagicMock()
+        socket.recv.return_value = b''
+        protocol = ServerProtocol(socket)
+
+        with self.assertRaises(EOFError):
+            protocol.read_bet()
+
 if __name__ == '__main__':
     unittest.main()

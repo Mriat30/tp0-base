@@ -1,7 +1,15 @@
 SHELL := /bin/bash
 PWD := $(shell pwd)
+PYTHON := python3
+VENV := venv
+SERVER_DIR := server
 
 GIT_REMOTE = github.com/7574-sistemas-distribuidos/docker-compose-init
+
+$(VENV)/bin/activate:
+	$(PYTHON) -m venv $(VENV)
+	./$(VENV)/bin/pip install --upgrade pip
+	./$(VENV)/bin/pip install pytest
 
 default: build
 
@@ -37,3 +45,15 @@ docker-compose-down:
 docker-compose-logs:
 	docker compose -f docker-compose-dev.yaml logs -f
 .PHONY: docker-compose-logs
+
+server-deps: $(VENV)/bin/activate
+.PHONY: server-deps
+
+test-server: server-deps
+	PYTHONPATH=$(PWD)/$(SERVER_DIR) ./$(VENV)/bin/pytest $(SERVER_DIR)/tests
+.PHONY: test-server
+
+clean-python:
+	rm -rf $(VENV)
+	find . -type d -name "__pycache__" -exec rm -rf {} +
+.PHONY: clean-python
