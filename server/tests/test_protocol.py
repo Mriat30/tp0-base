@@ -86,5 +86,13 @@ class TestProtocol(unittest.TestCase):
         
         socket.sendall.assert_called_once_with(b'\x00')
 
+    def test_send_bet_registered_client_disconnection(self):
+        socket = MagicMock()
+        socket.sendall.side_effect = OSError("Socket cerrado por el cliente")
+        protocol = ServerProtocol(socket)
+
+        with self.assertRaises(EOFError):
+            protocol.send_bet_registered()
+
 if __name__ == '__main__':
     unittest.main()
