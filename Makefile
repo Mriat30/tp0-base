@@ -3,6 +3,7 @@ PWD := $(shell pwd)
 PYTHON := python3
 VENV := venv
 SERVER_DIR := server
+CLIENT_DIR := client
 
 GIT_REMOTE = github.com/7574-sistemas-distribuidos/docker-compose-init
 
@@ -52,6 +53,13 @@ server-deps: $(VENV)/bin/activate
 test-server: server-deps
 	PYTHONPATH=$(PWD)/$(SERVER_DIR) ./$(VENV)/bin/pytest $(SERVER_DIR)/tests
 .PHONY: test-server
+
+test-client:
+	@docker run --rm \
+		-v $(PWD):/build \
+		-w /build/client \
+		golang:1.17 /bin/bash -c "go test -v -mod=vendor ./common/... | sed ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''"
+.PHONY: test-client
 
 clean-python:
 	rm -rf $(VENV)
