@@ -66,5 +66,16 @@ class TestProtocol(unittest.TestCase):
         with self.assertRaises(EOFError):
             protocol.read_bet()
 
+    def test_read_bet_invalid_utf8_in_lastname(self):
+        socket = MagicMock()
+        socket.recv.side_effect = [
+            b'\x00\x00\x00\x01', # Agencia
+            b'\x04', b'Juan',    # Nombre OK
+            b'\x02', b'\xff\xfe',# Apellido con bytes no UTF-8
+        ]
+        protocol = ServerProtocol(socket)
+
+        with self.assertRaises(UnicodeDecodeError):
+            protocol.read_bet()
 if __name__ == '__main__':
     unittest.main()
