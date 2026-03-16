@@ -31,8 +31,8 @@ class Server:
         while self._should_be_running:
             client_socket = self.__accept_new_connection()
             if client_socket:
-                handler = ClientHandler(client_socket)
-                handler.start() 
+                self.client = ClientHandler(client_socket)
+                self.client.start() 
 
         logging.info("action: graceful_shutdown | result: success")
         self.__stop()
@@ -69,6 +69,5 @@ class Server:
         if client is None:
             return
         else:
-            client.shutdown(socket.SHUT_RDWR)
-            client.close()
+            client.stop
             self.client = None

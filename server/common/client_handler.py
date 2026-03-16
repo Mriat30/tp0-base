@@ -35,12 +35,16 @@ class ClientHandler:
         except OSError as e:
             logging.error(f"action: receive_message | result: fail | error: {e}")
         finally:
-            self.__stop()
+            self.stop()
 
-    def __stop(self):
+    def stop(self):
         self._should_be_running = False
-        try:
-            self._socket.shutdown(socket.SHUT_RDWR)
-        except OSError:
-            pass
-        self._socket.close()
+        if self._socket:
+            try:
+                self._socket.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+            
+            self._socket.close()
+            self._socket = None 
+            logging.debug("action: socket_closed | result: success")
