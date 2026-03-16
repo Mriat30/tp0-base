@@ -2,6 +2,7 @@ package protocol
 
 import (
     "encoding/binary"
+    "fmt"
     "io"
     "github.com/7574-sistemas-distribuidos/docker-compose-init/client/common/model"
 )
@@ -35,7 +36,9 @@ func (p *Protocol) ReadBetRegistered() error {
 	if err != nil {
 		return err
 	}
-	
+	if ack != 0 {
+		return fmt.Errorf("error: bet not registered")
+	}
 	return nil
 }
 

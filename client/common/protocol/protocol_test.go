@@ -66,3 +66,13 @@ func TestProtocol_ReadBetRegistered_Success(t *testing.T) {
 		t.Errorf("got error %v, want nil", err)
 	}
 }
+
+func TestProtocol_ReadBetRegistered_Fail(t *testing.T) {
+	buf := bytes.NewBuffer([]byte{1})
+	proto := NewProtocol(buf)
+
+	err := proto.ReadBetRegistered()
+	if err == nil {
+		t.Error("got nil, want error")
+	}
+}
