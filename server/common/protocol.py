@@ -25,6 +25,10 @@ class ServerProtocol:
 
         return Bet(agency, first_name, last_name, document, birthdate, number)
 
+    def send_bet_registered(self):
+        self._socket.sendall(b'\x00')
+
+
     def _read_string(self):
         raw_len = self._socket.recv(self._CHAR_SIZE)
         if not raw_len: raise EOFError("Socket cerrado por el cliente")

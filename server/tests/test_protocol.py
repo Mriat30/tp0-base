@@ -77,5 +77,14 @@ class TestProtocol(unittest.TestCase):
 
         with self.assertRaises(UnicodeDecodeError):
             protocol.read_bet()
+
+    def test_send_bet_registered_writes_success_byte(self):
+        socket = MagicMock()
+        protocol = ServerProtocol(socket)
+        
+        protocol.send_bet_registered()
+        
+        socket.sendall.assert_called_once_with(b'\x00')
+
 if __name__ == '__main__':
     unittest.main()
