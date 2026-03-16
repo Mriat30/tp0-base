@@ -1,42 +1,35 @@
 package protocol
 
 import (
-	"encoding/binary"
-	"io"
+    "encoding/binary"
+    "io"
+    "github.com/7574-sistemas-distribuidos/docker-compose-init/client/common/model"
 )
+
 const (
-	RegisterSingleBet uint8 = 1
+    RegisterSingleBet uint8 = 1
 )
 
 type Protocol struct {
-	rw io.ReadWriter
+    rw io.ReadWriter
 }
 
 func NewProtocol(rw io.ReadWriter) *Protocol {
-	return &Protocol{rw: rw}
+    return &Protocol{rw: rw}
 }
 
-func (p *Protocol) SendBet(agency int32, firstName, lastName, document, birthdate, number string) error {
-	if err := binary.Write(p.rw, binary.BigEndian, RegisterSingleBet); err != nil {
-		return err
-	}
-	if err := binary.Write(p.rw, binary.BigEndian, agency); err != nil {
-		return err
-	}
-	fields := []string{firstName, lastName, document, birthdate, number}
-	for _, field := range fields {
-		if err := p.writeString(field); err != nil {
-			return err
-		}
-	}
-	return nil
+func (p *Protocol) SendBet(bet model.Bet) error {
+    binary.Write(p.rw, binary.BigEndian, uint8(1))
+    binary.Write(p.rw, binary.BigEndian, bet.Agency)
+    p.writeString(bet.FirstName)
+    p.writeString(bet.LastName)
+    binary.Write(p.rw, binary.BigEndian, bet.Document)
+    p.writeString(bet.Birthdate)
+    binary.Write(p.rw, binary.BigEndian, bet.Number)
+    return nil
 }
 
-func (p *Protocol) writeString(s string) error {
-	length := uint8(len(s))
-	if err := binary.Write(p.rw, binary.BigEndian, length); err != nil {
-		return err
-	}
-	_, err := p.rw.Write([]byte(s))
-	return err
+func (p *Protocol) writeString(s string) {
+    binary.Write(p.rw, binary.BigEndian, uint8(len(s)))
+    p.rw.Write([]byte(s))
 }

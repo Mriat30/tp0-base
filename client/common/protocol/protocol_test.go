@@ -2,33 +2,57 @@ package protocol
 
 import (
 	"bytes"
+	"encoding/binary"
 	"testing"
+	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/common/model"
 )
+
+func checkUint8(t *testing.T, r *bytes.Reader, want uint8) {
+	var got uint8
+	binary.Read(r, binary.BigEndian, &got)
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func checkUint32(t *testing.T, r *bytes.Reader, want uint32) {
+	var got uint32
+	binary.Read(r, binary.BigEndian, &got)
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func checkString(t *testing.T, r *bytes.Reader, want string) {
+	var length uint8
+	binary.Read(r, binary.BigEndian, &length)
+	data := make([]byte, length)
+	r.Read(data)
+	if string(data) != want {
+		t.Errorf("got %s, want %s", string(data), want)
+	}
+}
 
 func TestProtocol_SendBet(t *testing.T) {
 	buf := new(bytes.Buffer)
 	proto := NewProtocol(buf)
-	agency := int32(5)
-	firstName := "Juan"
-
-	err := proto.SendBet(agency, firstName, "Perez", "123", "2000-01-01", "7574")
-	if err != nil {
-		t.Fatalf("Error enviando apuesta: %v", err)
+	bet := model.Bet{
+		Agency:    5,
+		FirstName: "Juan",
+		LastName:  "Perez",
+		Document:  123,
+		Birthdate: "2000-01-01",
+		Number:    7574,
 	}
 
-	result := buf.Bytes()
-	if result[0] != 1 {
-		t.Errorf("Action esperado 1, obtenido %v", result[0])
-	}
-	if result[4] != 5 {
-		t.Errorf("Agency byte final esperado 5, obtenido %v", result[4])
-	}
+	proto.SendBet(bet)
+	r := bytes.NewReader(buf.Bytes())
 
-	if result[5] != 4 {
-		t.Errorf("Largo de nombre esperado 4, obtenido %v", result[5])
-	}
-	name := string(result[6:10])
-	if name != "Juan" {
-		t.Errorf("Nombre esperado 'Juan', obtenido '%v'", name)
-	}
+	checkUint8(t, r, 1)
+	checkUint32(t, r, 5)
+	checkString(t, r, "Juan")
+	checkString(t, r, "Perez")
+	checkUint32(t, r, 123)
+	checkString(t, r, "2000-01-01")
+	checkUint32(t, r, 7574)
 }
