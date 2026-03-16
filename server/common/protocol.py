@@ -5,6 +5,7 @@ from model.bet import Bet
 class ServerProtocol:
     _CHAR_SIZE = 1
     _INT_SIZE = 4
+    _SEND_BET_REGISTERED_RESPONSE = b'\x00'
 
     def __init__(self, socket):
         self._socket = socket
@@ -27,7 +28,7 @@ class ServerProtocol:
 
     def send_bet_registered(self):
         try:
-            self._socket.sendall(b'\x00')
+            self._socket.sendall(self._SEND_BET_REGISTERED_RESPONSE)
         except OSError:
             raise EOFError("Socket cerrado por el cliente")
 
