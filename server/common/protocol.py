@@ -27,7 +27,7 @@ class ServerProtocol:
 
     def _read_string(self):
         raw_len = self._socket.recv(self._CHAR_SIZE)
-        if not raw_len: return ""
+        if not raw_len: raise EOFError("Socket cerrado por el cliente")
         length = int.from_bytes(raw_len, byteorder='big')
         return self._read_exactly(length).decode('utf-8')
 
@@ -35,6 +35,6 @@ class ServerProtocol:
         data = b''
         while len(data) < n:
             packet = self._socket.recv(n - len(data))
-            if not packet: raise EOFError("Socket cerrado")
+            if not packet: raise EOFError("Socket cerrado por el cliente")
             data += packet
         return data

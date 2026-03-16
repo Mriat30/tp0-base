@@ -54,6 +54,17 @@ class TestProtocol(unittest.TestCase):
 
         with self.assertRaises(EOFError):
             protocol.read_bet()
+            
+    def test_read_bet_disconnection_during_name_length(self):
+        socket = MagicMock()
+        socket.recv.side_effect = [
+            b'\x00\x00\x00\x01',
+            b''                  
+        ]
+        protocol = ServerProtocol(socket)
+
+        with self.assertRaises(EOFError):
+            protocol.read_bet()
 
 if __name__ == '__main__':
     unittest.main()
