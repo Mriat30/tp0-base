@@ -1,7 +1,7 @@
 import socket
 import logging
 import signal
-
+from server.common.client_handler import ClientHandler
 
 class Server:
 
@@ -28,38 +28,15 @@ class Server:
         communication with a client. After client with communucation
         finishes, servers starts to accept new connections again
         """
-
-        self._should_be_running = True
         while self._should_be_running:
-            self.client = self.__accept_new_connection()
-            if self.client is not None:
-                self.__handle_client_connection()
+            client_socket = self.__accept_new_connection()
+            if client_socket:
+                handler = ClientHandler(client_socket)
+                handler.start() 
+
         logging.info("action: graceful_shutdown | result: success")
         self.__stop()
-
-    def __handle_client_connection(self):
-        """
-        Read message from a specific client socket and closes the socket
-
-        If a problem arises in the communication with the client, the
-        client socket will also be closed
-        """
-        client = self.client
-        if client is None:
-            return
-
-        try:
-            # TODO: Modify the receive to avoid short-reads
-            msg = client.recv(1024).rstrip().decode('utf-8')
-            addr = client.getpeername()
-            logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {msg}')
-            # TODO: Modify the send to avoid short-writes
-            client.send("{}\n".format(msg).encode('utf-8'))
-        except OSError as e:
-            logging.error(f"action: receive_message | result: fail | error: {e}")
-        finally:
-            self.__clear()
-
+        
     def __accept_new_connection(self):
         """
         Accept new connections
