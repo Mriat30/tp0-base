@@ -29,6 +29,16 @@ func (p *Protocol) SendBet(bet model.Bet) error {
     return nil
 }
 
+func (p *Protocol) ReadBetRegistered() error {
+	var ack uint8
+	err := binary.Read(p.rw, binary.BigEndian, &ack)
+	if err != nil {
+		return err
+	}
+	
+	return nil
+}
+
 func (p *Protocol) writeString(s string) {
     binary.Write(p.rw, binary.BigEndian, uint8(len(s)))
     p.rw.Write([]byte(s))

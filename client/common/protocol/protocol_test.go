@@ -56,3 +56,13 @@ func TestProtocol_SendBet(t *testing.T) {
 	checkString(t, r, "2000-01-01")
 	checkUint32(t, r, 7574)
 }
+
+func TestProtocol_ReadBetRegistered_Success(t *testing.T) {
+	buf := bytes.NewBuffer([]byte{0})
+	proto := NewProtocol(buf)
+
+	err := proto.ReadBetRegistered()
+	if err != nil {
+		t.Errorf("got error %v, want nil", err)
+	}
+}
