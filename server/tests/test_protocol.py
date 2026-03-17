@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 import datetime
 
 class TestProtocol(unittest.TestCase):
-    def test_protocol_read_action_success(self):
+    def test_protocol_read_action_register_single_bet_success(self):
         socket = MagicMock()
         socket.recv.return_value = b'\x01' 
         
@@ -92,6 +92,17 @@ class TestProtocol(unittest.TestCase):
 
         with self.assertRaises(EOFError):
             protocol.send_bet_registered()
+
+    def test_protocol_read_action_register_batch_of_bets_success(self):
+        socket = MagicMock()
+        socket.recv.return_value = b'\x02' 
+        
+        protocol = ServerProtocol(socket)
+        
+        action = protocol.read_action()
+        
+        self.assertEqual(action, ActionType.REGISTER_BATCH_OF_BETS)
+
 
 if __name__ == '__main__':
     unittest.main()

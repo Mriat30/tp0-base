@@ -2,6 +2,7 @@ from enum import Enum
 
 class ActionType(Enum):
     REGISTER_SINGLE_BET = 0x01
+    REGISTER_BATCH_OF_BETS = 0x02
 
     @classmethod
     def from_bytes(cls, raw_bytes):
