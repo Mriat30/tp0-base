@@ -28,6 +28,7 @@ class Server:
         communication with a client. After client with communucation
         finishes, servers starts to accept new connections again
         """
+        self._should_be_running = True
         while self._should_be_running:
             client_socket = self.__accept_new_connection()
             if client_socket:
