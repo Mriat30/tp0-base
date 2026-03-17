@@ -1,7 +1,7 @@
 import socket
 import logging
 import signal
-from server.common.client_handler import ClientHandler
+from common.client_handler import ClientHandler
 
 class Server:
 
@@ -70,5 +70,5 @@ class Server:
         if client is None:
             return
         else:
-            client.stop
+            client.stop()
             self.client = None
