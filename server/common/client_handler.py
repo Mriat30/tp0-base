@@ -34,6 +34,8 @@ class ClientHandler:
 
         except OSError as e:
             logging.error(f"action: receive_message | result: fail | error: {e}")
+        except Exception as e:
+            logging.error(f"action: receive_message | result: fail | error: {e}")
         finally:
             self.stop()
 
