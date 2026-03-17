@@ -125,6 +125,26 @@ class TestProtocol(unittest.TestCase):
         self.assertEqual(bets[0].document, 40000000)
         self.assertEqual(bets[0].birthdate, datetime.date.fromisoformat('2000-01-01'))
         self.assertEqual(bets[0].number, 7574)
-
+    
+    def test_read_batch_of_bets_with_multiple_bets_fail(self):
+        socket = MagicMock()
+        socket.recv.side_effect = [
+                b'\x00\x00\x00\x02', # Cantidad = 2
+                # --- Apuesta 1 ---
+                b'\x00\x00\x00\x01', # Agencia
+                b'\x05', b'Mateo',   # Nombre
+                b'\x05', b'Perez',   # Apellido
+                b'\x02\x62\x5a\x00', # Documento
+                b'\x0a', b'2000-01-01', # Fecha
+                b'\x00\x00\x1d\x96', # Número
+                # --- Apuesta 2 ---
+                b'\x00\x00\x00\x01', # Agencia
+                b'\x04', b'Juan',    # Nombre
+                b'',                 # Apellido con disconexión del cliente
+            ]
+        protocol = ServerProtocol(socket)
+        with self.assertRaises(EOFError):
+            protocol.read_batch_of_bets()
+    
 if __name__ == '__main__':
     unittest.main()
