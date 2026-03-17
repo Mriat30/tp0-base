@@ -32,6 +32,8 @@ def main():
         content.append(f"  client{i}:")
         content.append(f"    container_name: client{i}")
         content.append(f"    image: client:latest")
+        content.append(f"    env_file:")
+        content.append(f"      - ./una_apuesta.env")
         content.append(f"    volumes:")
         content.append(f"      - ./client/config.yaml:/config.yaml")
         content.append(f"    entrypoint: /client")

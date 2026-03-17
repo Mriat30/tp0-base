@@ -19,6 +19,7 @@ type ClientConfig struct {
 	ServerAddress string
 	LoopAmount    int
 	LoopPeriod    time.Duration
+	Bet           model.Bet
 }
 
 type Client struct {
@@ -58,18 +59,9 @@ func (c *Client) StartClientLoop() {
 			time.Sleep(c.config.LoopPeriod)
 			continue
 		}
-
-		bet := model.Bet{
-			Agency:    1,
-			FirstName: "Juan",
-			LastName:  "Perez",
-			Document:  12345678,
-			Birthdate: "1990-01-01",
-			Number:    7574,
-		}
-
 		proto := protocol.NewProtocol(c.conn)
-
+		
+		bet := c.config.Bet
 		err = proto.SendBet(bet)
 		if err != nil {
 			log.Errorf("action: send_message | result: fail | client_id: %v | error: %v", c.config.ID, err)
