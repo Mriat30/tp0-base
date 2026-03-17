@@ -12,17 +12,16 @@ class ServerProtocol:
 
     def read_action(self):
         action = self._socket.recv(self._CHAR_SIZE)
+        if not action: raise EOFError("Socket cerrado por el cliente")
         return ActionType.from_bytes(action)
 
     def read_bet(self):
-        agency_raw = self._read_exactly(self._INT_SIZE)
-        agency = str(int.from_bytes(agency_raw, byteorder='big'))
-
+        agency = self._read_int()
         first_name = self._read_string()
         last_name = self._read_string()
-        document = self._read_string()
+        document = self._read_int()
         birthdate = self._read_string()
-        number = self._read_string()
+        number = self._read_int()
 
         return Bet(agency, first_name, last_name, document, birthdate, number)
 
@@ -31,6 +30,10 @@ class ServerProtocol:
             self._socket.sendall(self._SEND_BET_REGISTERED_RESPONSE)
         except OSError:
             raise EOFError("Socket cerrado por el cliente")
+
+    def _read_int(self):
+        raw = self._read_exactly(self._INT_SIZE)
+        return int.from_bytes(raw, byteorder='big')
 
     def _read_string(self):
         raw_len = self._socket.recv(self._CHAR_SIZE)
