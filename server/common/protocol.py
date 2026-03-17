@@ -24,6 +24,13 @@ class ServerProtocol:
         number = self._read_int()
 
         return Bet(agency, first_name, last_name, document, birthdate, number)
+    
+    def read_batch_of_bets(self):
+        batch_size = self._read_int()
+        bets = []
+        for _ in range(batch_size):
+            bets.append(self.read_bet())
+        return bets
 
     def send_bet_registered(self):
         try:

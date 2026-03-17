@@ -103,6 +103,28 @@ class TestProtocol(unittest.TestCase):
         
         self.assertEqual(action, ActionType.REGISTER_BATCH_OF_BETS)
 
+    def test_read_batch_of_bets_with_single_bet_success(self):
+        socket = MagicMock()
+        socket.recv.side_effect = [
+            b'\x00\x00\x00\x01', # Cantidad de apuestas
+            b'\x00\x00\x00\x01', # Agencia
+            b'\x05', b'Mateo',   # Nombre
+            b'\x05', b'Perez',   # Apellido
+            b'\x02\x62\x5a\x00', # Documento
+            b'\x0a', b'2000-01-01', # Fecha de nacimiento
+            b'\x00\x00\x1d\x96'  # Número de apuesta
+        ]
+
+        protocol = ServerProtocol(socket)
+        bets = protocol.read_batch_of_bets()
+
+        self.assertEqual(len(bets), 1)
+        self.assertEqual(bets[0].agency, 1)
+        self.assertEqual(bets[0].first_name, 'Mateo')
+        self.assertEqual(bets[0].last_name, 'Perez')
+        self.assertEqual(bets[0].document, 40000000)
+        self.assertEqual(bets[0].birthdate, datetime.date.fromisoformat('2000-01-01'))
+        self.assertEqual(bets[0].number, 7574)
 
 if __name__ == '__main__':
     unittest.main()
