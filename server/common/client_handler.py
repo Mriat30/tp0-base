@@ -13,7 +13,7 @@ class ClientHandler:
 
     def start(self):
         """
-        Read message from a specific client socket and closes the socket
+        Read message from a specific client socket
 
         If a problem arises in the communication with the client, the
         client socket will also be closed

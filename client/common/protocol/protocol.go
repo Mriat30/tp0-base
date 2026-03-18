@@ -9,6 +9,7 @@ import (
 
 const (
     RegisterSingleBet uint8 = 1
+    RegisterBatchBets uint8 = 2
 )
 
 type Protocol struct {
@@ -20,14 +21,27 @@ func NewProtocol(rw io.ReadWriter) *Protocol {
 }
 
 func (p *Protocol) SendBet(bet model.Bet) error {
-    binary.Write(p.rw, binary.BigEndian, uint8(1))
+    binary.Write(p.rw, binary.BigEndian, RegisterSingleBet)
+    p.writeBet(bet)
+    return nil
+}
+
+func (p *Protocol) SendBatchOfBets(bets []model.Bet) error {
+    binary.Write(p.rw, binary.BigEndian, RegisterBatchBets)
+    binary.Write(p.rw, binary.BigEndian, uint32(len(bets)))
+    for _, bet := range bets {
+        p.writeBet(bet)
+    }
+    return nil
+}
+
+func (p *Protocol) writeBet(bet model.Bet) {
     binary.Write(p.rw, binary.BigEndian, bet.Agency)
     p.writeString(bet.FirstName)
     p.writeString(bet.LastName)
     binary.Write(p.rw, binary.BigEndian, bet.Document)
     p.writeString(bet.Birthdate)
     binary.Write(p.rw, binary.BigEndian, bet.Number)
-    return nil
 }
 
 func (p *Protocol) ReadBetRegistered() error {

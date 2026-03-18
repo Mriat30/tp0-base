@@ -33,6 +33,15 @@ func checkString(t *testing.T, r *bytes.Reader, want string) {
 	}
 }
 
+func checkBet(t *testing.T, r *bytes.Reader, bet model.Bet) {
+	checkUint32(t, r, bet.Agency)
+	checkString(t, r, bet.FirstName)
+	checkString(t, r, bet.LastName)
+	checkUint32(t, r, bet.Document)
+	checkString(t, r, bet.Birthdate)
+	checkUint32(t, r, bet.Number)
+}
+
 func TestProtocol_SendBet(t *testing.T) {
 	buf := new(bytes.Buffer)
 	proto := NewProtocol(buf)
@@ -49,12 +58,7 @@ func TestProtocol_SendBet(t *testing.T) {
 	r := bytes.NewReader(buf.Bytes())
 
 	checkUint8(t, r, 1)
-	checkUint32(t, r, 5)
-	checkString(t, r, "Juan")
-	checkString(t, r, "Perez")
-	checkUint32(t, r, 123)
-	checkString(t, r, "2000-01-01")
-	checkUint32(t, r, 7574)
+	checkBet(t, r, bet)
 }
 
 func TestProtocol_ReadBetRegistered_Success(t *testing.T) {
@@ -74,5 +78,37 @@ func TestProtocol_ReadBetRegistered_Fail(t *testing.T) {
 	err := proto.ReadBetRegistered()
 	if err == nil {
 		t.Error("got nil, want error")
+	}
+}
+
+func TestProtocol_SendBatchOfBets_Success(t *testing.T) {
+	buf := new(bytes.Buffer)
+	proto := NewProtocol(buf)
+	bets := []model.Bet{
+		{
+			Agency:    5,
+			FirstName: "Juan",
+			LastName:  "Perez",
+			Document:  123,
+			Birthdate: "2000-01-01",
+			Number:    7574,
+		},
+		{
+			Agency:    10,
+			FirstName: "Maria",
+			LastName:  "Gomez",
+			Document:  456,
+			Birthdate: "1995-05-05",
+			Number:    1234,
+		},
+	}
+
+	proto.SendBatchOfBets(bets)
+	r := bytes.NewReader(buf.Bytes())
+	checkUint8(t, r, 2)
+	checkUint32(t, r, 2)
+
+	for _, bet := range bets {
+		checkBet(t, r, bet)
 	}
 }
