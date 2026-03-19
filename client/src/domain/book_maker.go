@@ -34,7 +34,7 @@ func (b *Bookmaker) RegisterAll(batchSize int) error {
 			log.Errorf("action: leer_batch | result: fail | client_id: %v | error: %v", b.id, err)
 			return err
 		}
-		err = b.proto.SendBatch(batch)
+		err = b.proto.SendBatchOfBets(batch)
 		if err != nil {
 			log.Errorf("action: enviar_batch | result: fail | client_id: %v | error: %v", b.id, err)
 			return err

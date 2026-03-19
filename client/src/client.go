@@ -77,5 +77,9 @@ func (c *Client) handleSigterm() {
 		<-sigs
 		log.Infof("action: graceful_shutdown | result: in_progress")
 		c.should_be_running = false
+		if c.conn != nil {
+            c.conn.Close()
+        }
+
 	}()
 }
