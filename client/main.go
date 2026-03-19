@@ -11,10 +11,11 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/src"
-
+	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/src/reader"
 )
 
 var log = logging.MustGetLogger("log")
+const dataPath = "./data/agency-%s.csv"
 
 // InitConfig Function that uses viper library to parse configuration parameters.
 // Viper is configured to read variables from both environment variables and the
@@ -38,12 +39,7 @@ func InitConfig() (*viper.Viper, error) {
 	v.BindEnv("loop", "period")
 	v.BindEnv("loop", "amount")
 	v.BindEnv("log", "level")
-	v.BindEnv("bet.agency", "AGENCIA")
-    v.BindEnv("bet.first_name", "NOMBRE")
-    v.BindEnv("bet.last_name", "APELLIDO")
-    v.BindEnv("bet.document", "DOCUMENTO")
-    v.BindEnv("bet.birthdate", "NACIMIENTO")
-    v.BindEnv("bet.number", "NUMERO")
+	v.BindEnv("batch.maxAmount")
 	// Try to read configuration from config file. If config file
 	// does not exists then ReadInConfig will fail but configuration
 	// can be loaded from the environment variables so we shouldn't
@@ -96,17 +92,6 @@ func PrintConfig(v *viper.Viper) {
 	)
 }
 
-func buildBetFromConfig(v *viper.Viper) model.Bet {
-    return model.Bet{
-        Agency:    uint32(v.GetInt("bet.agency")),
-        FirstName: v.GetString("bet.first_name"),
-        LastName:  v.GetString("bet.last_name"),
-        Document:  uint32(v.GetInt("bet.document")),
-        Birthdate: v.GetString("bet.birthdate"),
-        Number:    uint32(v.GetInt("bet.number")),
-    }
-}
-
 func main() {
 	v, err := InitConfig()
 	if err != nil {
@@ -119,13 +104,17 @@ func main() {
 
 	// Print program config with debugging purposes
 	PrintConfig(v)
+	clientID := v.GetString("id")
+	filePath := fmt.Sprintf(dataPath, clientID)
+	provider := reader.NewCSVBetProvider(filePath, clientID)
 	
 	clientConfig := src.ClientConfig{
 		ServerAddress: v.GetString("server.address"),
 		ID:            v.GetString("id"),
 		LoopAmount:    v.GetInt("loop.amount"),
 		LoopPeriod:    v.GetDuration("loop.period"),
-		Bet:           buildBetFromConfig(v),
+		BatchMaxAmount: v.GetInt("batch.maxAmount"),
+		BetProvider: provider,
 	}
 
 	client := src.NewClient(clientConfig)

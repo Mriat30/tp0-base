@@ -19,7 +19,8 @@ type ClientConfig struct {
 	ServerAddress string
 	LoopAmount    int
 	LoopPeriod    time.Duration
-	Bet           model.Bet
+	BatchMaxAmount int
+	BetProvider model.BetProvider
 }
 
 type Client struct {
@@ -50,26 +51,23 @@ func (c *Client) createClientSocket() error {
 }
 
 func (c *Client) StartClientLoop() {
-	c.should_be_running = true
-	c.handleSigterm()
+    c.should_be_running = true
+    c.handleSigterm()
+    err := c.createClientSocket()
+    if err != nil {
+        log.Errorf("action: connect | result: fail | error: %v", err)
+        return
+    }
 
-	for msgID := 1; msgID <= c.config.LoopAmount && c.should_be_running; msgID++ {
-		err := c.createClientSocket()
-		if err != nil {
-			time.Sleep(c.config.LoopPeriod)
-			continue
-		}
-
-		proto := protocol.NewProtocol(c.conn)
-		book_maker := domain.NewBookmaker(proto, c.config.Bet, c.config.ID)
-
-		_ = book_maker.Register()
-
-		c.conn.Close()
-		time.Sleep(c.config.LoopPeriod)
-	}
-
-	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
+	defer c.conn.Close()
+    proto := protocol.NewProtocol(c.conn, protocol.WithMaxBatchSize(8192))
+    bookMaker := domain.NewBookmaker(proto, c.config.BetProvider, c.config.ID)
+    err = bookMaker.RegisterAll(c.config.BatchMaxAmount, c.config.LoopPeriod)
+    if err != nil {
+        log.Errorf("action: register_all | result: fail | client_id: %v | error: %v", c.config.ID, err)
+    } else {
+        log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
+    }
 }
 
 func (c *Client) handleSigterm() {
