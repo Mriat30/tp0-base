@@ -40,12 +40,12 @@ class ClientHandler:
             bet = self._protocol.read_bet()
             store_bets([bet])
             self._protocol.send_bet_registered()
-            self._logger.info(f'action: apuesta_almacenada | result: success | ip: {addr[0]} | dni: {bet.document}')
+            self._logger.info(f'action: apuesta_recibida | result: success | ip: {addr[0]} | dni: {bet.document}')
         elif action == ActionType.REGISTER_BATCH_OF_BETS:
             bets = self._protocol.read_batch_of_bets()
             store_bets(bets)
             self._protocol.send_bet_registered()
-            self._logger.info(f'action: batch_de_apuestas_almacenado | result: success | ip: {addr[0]} | cantidad: {len(bets)}')
+            self._logger.info(f'action: apuesta_recibida | result: success | ip: {addr[0]} | cantidad: {len(bets)}')
         else:
             self._logger.error(f"action: receive_message | result: fail | error: unknown_action")
 
