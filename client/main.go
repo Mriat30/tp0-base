@@ -105,9 +105,13 @@ func main() {
 	// Print program config with debugging purposes
 	PrintConfig(v)
 	clientID := v.GetString("id")
-	filePath := fmt.Sprintf(dataPath, clientID)
-	provider := reader.NewCSVBetProvider(filePath, clientID)
-	
+	file, err := os.Open(dataPath)
+	if err != nil {
+		log.Criticalf("action: open_file | result: fail | path: %s | error: %v", dataPath, err)
+		return
+	}
+	defer file.Close()
+	provider := reader.NewCSVBetReader(file, clientID)
 	clientConfig := src.ClientConfig{
 		ServerAddress: v.GetString("server.address"),
 		ID:            v.GetString("id"),
