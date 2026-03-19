@@ -105,14 +105,14 @@ func main() {
 	// Print program config with debugging purposes
 	PrintConfig(v)
 	clientID := v.GetString("id")
-	file, err := os.Open(dataPath)
+	filePath := fmt.Sprintf(dataPath, clientID)
+	file, err := os.Open(filePath)
 	if err != nil {
-		log.Criticalf("action: open_file | result: fail | path: %s | error: %v", dataPath, err)
+		log.Criticalf("action: open_file | result: fail | path: %s | error: %v", filePath, err)
 		return
 	}
 	defer file.Close()
-	provider := reader.NewCSVBetReader(file, clientID)
-	clientConfig := src.ClientConfig{
+	provider := reader.NewCSVBetReader(file, clientID)clientConfig := src.ClientConfig{
 		ServerAddress: v.GetString("server.address"),
 		ID:            v.GetString("id"),
 		LoopAmount:    v.GetInt("loop.amount"),
