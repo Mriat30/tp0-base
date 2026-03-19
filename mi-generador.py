@@ -19,7 +19,7 @@ def main():
         "    container_name: server",
         "    image: server:latest",
         "    volumes:",
-        "      - ./server/config.ini:/config.ini",
+        "      - ./server/config.ini:/config.ini:ro",
         "    entrypoint: python3 /main.py",
         "    environment:",
         "      - PYTHONUNBUFFERED=1",
@@ -35,7 +35,8 @@ def main():
         content.append(f"    env_file:")
         content.append(f"      - ./una_apuesta.env")
         content.append(f"    volumes:")
-        content.append(f"      - ./client/config.yaml:/config.yaml")
+        content.append(f"      - ./client/config.yaml:/config.yaml:ro")
+        content.append(f"      - ./.data/agency-{i}.csv:/data/agency-{i}.csv:ro")
         content.append(f"    entrypoint: /client")
         content.append(f"    environment:")
         content.append(f"      - CLI_ID={i}")
