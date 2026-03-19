@@ -13,20 +13,36 @@ func TestCSVBetReader_NextBatch(t *testing.T) {
 	batch, err := reader.NextBatch(1)
 	
 	if err != nil {
-		t.Fatalf("No se esperaba error, se obtuvo: %v", err)
+		t.Fatalf("Error reading batch: %v", err)
 	}
 	if len(batch) != 1 {
-		t.Errorf("Se esperaba 1 apuesta, se obtuvieron %d", len(batch))
+		t.Errorf("Expected 1 bet, got %d", len(batch))
 	}
 	if batch[0].FirstName != "Juan" || batch[0].Agency != 5 {
-		t.Errorf("Datos de la apuesta incorrectos: %+v", batch[0])
+		t.Errorf("Incorrect bet data: %+v", batch[0])
 	}
 
 	batch2, err := reader.NextBatch(10)
 	if len(batch2) != 1 {
-		t.Errorf("Se esperaba 1 apuesta restante, se obtuvieron %d", len(batch2))
+		t.Errorf("Expected 1 remaining bet, got %d", len(batch2))
 	}
 	if batch2[0].FirstName != "Maria" {
-		t.Errorf("Segunda apuesta incorrecta: %s", batch2[0].FirstName)
+		t.Errorf("Incorrect second bet: %s", batch2[0].FirstName)
 	}
+}
+
+func TestCSVBetReader_InvalidData(t *testing.T) {
+    data := "Juan,Perez,ESTO_NO_ES_UN_DNI,2000-01-01,7574"
+    r := strings.NewReader(data)
+    reader := NewCSVBetReader(r, "5")
+
+    _, err := reader.NextBatch(1)
+
+    if err == nil {
+        t.Fatal("Expected an error for invalid DNI, but none was obtained")
+    }
+
+    if !strings.Contains(err.Error(), "invalid syntax") {
+        t.Errorf("The error should mention a syntax problem, but was: %v", err)
+    }
 }
