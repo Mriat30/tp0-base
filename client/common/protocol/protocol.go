@@ -1,6 +1,7 @@
 package protocol
 
 import (
+    "bytes"
     "encoding/binary"
     "fmt"
     "io"
@@ -12,36 +13,62 @@ const (
     RegisterBatchBets uint8 = 2
 )
 
+type Option func(*Protocol)
+
 type Protocol struct {
     rw io.ReadWriter
+    maxBatchSize int
 }
 
-func NewProtocol(rw io.ReadWriter) *Protocol {
-    return &Protocol{rw: rw}
+func WithMaxBatchSize(maxBatchSize int) func(*Protocol) {
+    return func(p *Protocol) {
+        p.maxBatchSize = maxBatchSize
+    }
+}
+
+func NewProtocol(rw io.ReadWriter, opts ...Option) *Protocol {
+    p := &Protocol{
+        rw:           rw,
+        maxBatchSize: 8192, // Default max batch size is 8KB
+    }
+
+    for _, opt := range opts {
+        opt(p)
+    }
+
+    return p
 }
 
 func (p *Protocol) SendBet(bet model.Bet) error {
-    binary.Write(p.rw, binary.BigEndian, RegisterSingleBet)
-    p.writeBet(bet)
-    return nil
+	binary.Write(p.rw, binary.BigEndian, RegisterSingleBet)
+	p.writeBet(p.rw, bet)
+	return nil
 }
 
 func (p *Protocol) SendBatchOfBets(bets []model.Bet) error {
-    binary.Write(p.rw, binary.BigEndian, RegisterBatchBets)
-    binary.Write(p.rw, binary.BigEndian, uint32(len(bets)))
-    for _, bet := range bets {
-        p.writeBet(bet)
-    }
-    return nil
+    buf := new(bytes.Buffer)
+
+	binary.Write(buf, binary.BigEndian, RegisterBatchBets)
+	binary.Write(buf, binary.BigEndian, uint32(len(bets)))
+	for _, bet := range bets {
+		p.writeBet(buf, bet)
+	}
+
+	if buf.Len() > p.maxBatchSize {
+		return fmt.Errorf("batch too large: %d bytes (max %d)", buf.Len(), p.maxBatchSize)
+	}
+
+	_, err := p.rw.Write(buf.Bytes())
+	return err
 }
 
-func (p *Protocol) writeBet(bet model.Bet) {
-    binary.Write(p.rw, binary.BigEndian, bet.Agency)
-    p.writeString(bet.FirstName)
-    p.writeString(bet.LastName)
-    binary.Write(p.rw, binary.BigEndian, bet.Document)
-    p.writeString(bet.Birthdate)
-    binary.Write(p.rw, binary.BigEndian, bet.Number)
+func (p *Protocol) writeBet(w io.Writer, bet model.Bet) {
+	binary.Write(w, binary.BigEndian, bet.Agency)
+	p.writeString(w, bet.FirstName)
+	p.writeString(w, bet.LastName)
+	binary.Write(w, binary.BigEndian, bet.Document)
+	p.writeString(w, bet.Birthdate)
+	binary.Write(w, binary.BigEndian, bet.Number)
 }
 
 func (p *Protocol) ReadBetRegistered() error {
@@ -56,7 +83,7 @@ func (p *Protocol) ReadBetRegistered() error {
 	return nil
 }
 
-func (p *Protocol) writeString(s string) {
-    binary.Write(p.rw, binary.BigEndian, uint8(len(s)))
-    p.rw.Write([]byte(s))
+func (p *Protocol) writeString(w io.Writer, s string) {
+	binary.Write(w, binary.BigEndian, uint8(len(s)))
+	w.Write([]byte(s))
 }

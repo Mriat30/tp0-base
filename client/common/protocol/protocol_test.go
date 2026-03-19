@@ -112,3 +112,34 @@ func TestProtocol_SendBatchOfBets_Success(t *testing.T) {
 		checkBet(t, r, bet)
 	}
 }
+
+func TestProtocol_SendBatchOfBets_WithLimit(t *testing.T) {
+	buf := new(bytes.Buffer)
+    lowLimit := 50
+    proto := NewProtocol(buf, WithMaxBatchSize(lowLimit))
+
+    batch := []model.Bet{
+        {
+            Agency:    1,
+            FirstName: "Santiago Lionel",
+            LastName:  "Lorca",
+            Document:  30904465,
+            Birthdate: "1999-03-17",
+            Number:    7574,
+        },
+        {
+            Agency:    1,
+            FirstName: "Mateo",
+            LastName:  "Perez",
+            Document:  40000000,
+            Birthdate: "2000-01-01",
+            Number:    1234,
+        },
+    }
+
+    err := proto.SendBatchOfBets(batch)
+
+    if err == nil {
+        t.Fatal("got nil, want error")
+    }
+}
