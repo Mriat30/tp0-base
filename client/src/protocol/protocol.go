@@ -5,7 +5,7 @@ import (
     "encoding/binary"
     "fmt"
     "io"
-    "github.com/7574-sistemas-distribuidos/docker-compose-init/client/common/model"
+    "github.com/7574-sistemas-distribuidos/docker-compose-init/client/src/model"
 )
 
 const (

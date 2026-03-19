@@ -1,5 +1,4 @@
-package common
-
+package src
 import (
 	"net"
 	"os"
@@ -7,8 +6,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/common/model"
-	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/common/protocol"
+	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/src/domain"
+	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/src/model"
+	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/src/protocol"
 	"github.com/op/go-logging"
 )
 
@@ -61,7 +61,7 @@ func (c *Client) StartClientLoop() {
 		}
 
 		proto := protocol.NewProtocol(c.conn)
-		book_maker := NewBookmaker(proto, c.config.Bet, c.config.ID)
+		book_maker := domain.NewBookmaker(proto, c.config.Bet, c.config.ID)
 
 		_ = book_maker.Register()
 

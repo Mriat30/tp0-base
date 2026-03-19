@@ -1,9 +1,12 @@
-package common
+package domain
 
 import (
-	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/common/model"
-	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/common/protocol"
+	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/src/model"
+	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/src/protocol"
+	"github.com/op/go-logging"
 )
+
+var log = logging.MustGetLogger("log")
 
 type Bookmaker struct {
 	id    string

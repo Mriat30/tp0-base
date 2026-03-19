@@ -57,8 +57,8 @@ test-server: server-deps
 test-client:
 	@docker run --rm \
 		-v $(PWD):/build \
-		-w /build/client \
-		golang:1.17 /bin/bash -c "go test -v -mod=vendor ./common/... | sed ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''"
+		-w /build/client/src \
+		golang:1.17 /bin/bash -c "go test -v -mod=vendor ./... | sed ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''"
 .PHONY: test-client
 
 clean-python:

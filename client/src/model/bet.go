@@ -1,5 +1,9 @@
 package model
 
+type BetProvider interface {
+	NextBatch(size int) ([]Bet, error)
+}
+
 type Bet struct {
 	Agency    uint32
 	FirstName string

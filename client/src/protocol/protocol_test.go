@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"testing"
-	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/common/model"
+	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/src/model"
 )
 
 func checkUint8(t *testing.T, r *bytes.Reader, want uint8) {
