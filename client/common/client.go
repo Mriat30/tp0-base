@@ -59,26 +59,11 @@ func (c *Client) StartClientLoop() {
 			time.Sleep(c.config.LoopPeriod)
 			continue
 		}
+
 		proto := protocol.NewProtocol(c.conn)
-		
-		bet := c.config.Bet
-		err = proto.SendBet(bet)
-		if err != nil {
-			log.Errorf("action: send_message | result: fail | client_id: %v | error: %v", c.config.ID, err)
-			c.conn.Close()
-			return
-		}
+		book_maker := NewBookmaker(proto, c.config.Bet, c.config.ID)
 
-		log.Infof("action: apuesta_enviada | result: success | dni: %v", bet.Document)
-
-		err = proto.ReadBetRegistered()
-		if err != nil {
-			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v", c.config.ID, err)
-			c.conn.Close()
-			return
-		}
-
-		log.Infof("action: apuesta_almacenada | result: success | dni: %v", bet.Document)
+		_ = book_maker.Register()
 
 		c.conn.Close()
 		time.Sleep(c.config.LoopPeriod)
