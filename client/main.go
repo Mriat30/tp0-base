@@ -15,7 +15,7 @@ import (
 )
 
 var log = logging.MustGetLogger("log")
-const dataPath = "./data/agency-%s.csv"
+const dataPath = "/data/agency-%s.csv"
 
 // InitConfig Function that uses viper library to parse configuration parameters.
 // Viper is configured to read variables from both environment variables and the
