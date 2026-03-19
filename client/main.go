@@ -112,7 +112,8 @@ func main() {
 		return
 	}
 	defer file.Close()
-	provider := reader.NewCSVBetReader(file, clientID)clientConfig := src.ClientConfig{
+	provider := reader.NewCSVBetReader(file, clientID)
+	clientConfig := src.ClientConfig{
 		ServerAddress: v.GetString("server.address"),
 		ID:            v.GetString("id"),
 		LoopAmount:    v.GetInt("loop.amount"),
