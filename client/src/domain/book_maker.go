@@ -2,6 +2,7 @@ package domain
 
 import (
 	"io"
+	"time"
 	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/src/model"
 	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/src/protocol"
 	"github.com/op/go-logging"
@@ -23,7 +24,7 @@ func NewBookmaker(proto *protocol.Protocol, provider model.BetProvider, clientID
 	}
 }
 
-func (b *Bookmaker) RegisterAll(batchSize int) error {
+func (b *Bookmaker) RegisterAll(batchSize int, loopPeriod time.Duration) error {
 	for {
 		batch, err := b.provider.NextBatch(batchSize)
 		if err == io.EOF {
@@ -45,6 +46,7 @@ func (b *Bookmaker) RegisterAll(batchSize int) error {
 			return err
 		}
 		log.Infof("action: batch_procesado | result: success | client_id: %v | cantidad: %d", b.id, len(batch))
+		time.Sleep(loopPeriod)
 	}
 	return nil
 }
