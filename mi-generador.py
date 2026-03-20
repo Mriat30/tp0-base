@@ -23,7 +23,7 @@ def main():
         "    entrypoint: python3 /main.py",
         "    environment:",
         "      - PYTHONUNBUFFERED=1",
-        "      - N_CLIENTS={num_clients}",
+        f"      - N_CLIENTS={num_clients}",
         "    networks:",
         "      - testing_net",
         ""
