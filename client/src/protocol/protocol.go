@@ -89,7 +89,7 @@ func (p *Protocol) ReadBetRegistered() error {
 	if err != nil {
 		return err
 	}
-	if ack != 0 {
+	if ack != OpCodeBetRegistered {
 		return fmt.Errorf("error: bet not registered")
 	}
 	return nil
