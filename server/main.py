@@ -25,6 +25,7 @@ def initialize_config():
         config_params["port"] = int(os.getenv('SERVER_PORT', config["DEFAULT"]["SERVER_PORT"]))
         config_params["listen_backlog"] = int(os.getenv('SERVER_LISTEN_BACKLOG', config["DEFAULT"]["SERVER_LISTEN_BACKLOG"]))
         config_params["logging_level"] = os.getenv('LOGGING_LEVEL', config["DEFAULT"]["LOGGING_LEVEL"])
+        config_params["n_clients"] = int(os.getenv('N_CLIENTS', config["DEFAULT"]["N_CLIENTS"]))
         raw_timeout = os.getenv('ACCEPT_TIMEOUT', config["DEFAULT"].get("ACCEPT_TIMEOUT"))
         config_params["accept_timeout"] = float(raw_timeout) if raw_timeout is not None else None
     except KeyError as e:
@@ -41,6 +42,7 @@ def main():
     port = config_params["port"]
     listen_backlog = config_params["listen_backlog"]
     accept_timeout = config_params["accept_timeout"]
+    n_clients = config_params["n_clients"]
 
     initialize_log(logging_level)
 
@@ -48,10 +50,10 @@ def main():
     # of the component
     logging.debug(f"action: config | result: success | port: {port} | "
                   f"listen_backlog: {listen_backlog} | logging_level: {logging_level} |"
-                  f"accept_timeout: {accept_timeout}")
+                  f"accept_timeout: {accept_timeout} | n_clients: {n_clients}")
 
     # Initialize server and start server loop
-    server = Server(port, listen_backlog, accept_timeout)
+    server = Server(port, listen_backlog, accept_timeout, n_clients)
     server.run()
 
 def initialize_log(logging_level):

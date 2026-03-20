@@ -2,12 +2,13 @@ import socket
 import logging
 import signal
 from common.client_handler import ClientHandler
+from common.lottery import Lottery
 
 class Server:
 
     _DEFAULT_ACCEPT_TIMEOUT = 2.0
 
-    def __init__(self, port, listen_backlog, accept_timeout = None):
+    def __init__(self, port, listen_backlog, n_clients, accept_timeout = None):
         # Initialize server socket
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
@@ -16,6 +17,7 @@ class Server:
             accept_timeout = self._DEFAULT_ACCEPT_TIMEOUT
         self._server_socket.settimeout(accept_timeout)
         self._should_be_running = False
+        self._lottery = Lottery(n_clients, logging.getLogger(__name__))
         self.client = None
         signal.signal(signal.SIGTERM, self.__handle_sigterm)
 
@@ -32,7 +34,7 @@ class Server:
         while self._should_be_running:
             client_socket = self.__accept_new_connection()
             if client_socket:
-                self.client = ClientHandler(client_socket, logging.getLogger(__name__))
+                self.client = ClientHandler(client_socket, self._lottery, logging.getLogger(__name__))
                 self.client.start() 
 
         logging.info("action: graceful_shutdown | result: success")
