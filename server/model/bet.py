@@ -14,11 +14,11 @@ LOTTERY_WINNER_NUMBER = 7574
 class Bet:
     def __init__(self, agency: str, first_name: str, last_name: str, document: str, birthdate: str, number: str):
         """
-        agency must be passed with integer format.
+        agency must be passed with integer format or None.
         birthdate must be passed with format: 'YYYY-MM-DD'.
         number must be passed with integer format.
         """
-        self.agency = int(agency)
+        self.agency = int(agency) if agency is not None else None
         self.first_name = first_name
         self.last_name = last_name
         self.document = document

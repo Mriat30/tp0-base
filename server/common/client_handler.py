@@ -22,6 +22,10 @@ class ClientHandler:
         try:
             addr = self._socket.getpeername()
             
+            action = self._protocol.read_action()
+            self._protocol.read_client_id()
+            self._logger.debug(f"action: handshake | result: success | ip: {addr[0]} | client_id: {self._protocol._client_id}")
+            
             while self._should_be_running:
                 action = self._protocol.read_action()
                 self._process_action(action, addr)

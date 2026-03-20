@@ -19,7 +19,14 @@ class TestClientHandler(unittest.TestCase):
             os.remove(STORAGE_FILEPATH)
 
     def _prepare_proto(self, action, return_val, is_batch=False):
-        self.proto.read_action = MagicMock(side_effect=[action, EOFError])
+        self.proto.read_action = MagicMock(side_effect=[OpCode.CLIENT_ID, action, EOFError])
+        
+        # Mock read_client_id to also update the protocol's internal client_id
+        def mock_read_client_id():
+            self.proto._client_id = 1
+            return 1
+        
+        self.proto.read_client_id = MagicMock(side_effect=mock_read_client_id)
         if is_batch:
             self.proto.read_batch_of_bets = MagicMock(return_value=return_val)
         else:
@@ -27,7 +34,7 @@ class TestClientHandler(unittest.TestCase):
 
     @patch('common.client_handler.store_bets')
     def test_handle_single_bet_success(self, mock_store):
-        bet = Bet("1", "Juan", "Perez", "12345678", "1990-01-01", "7574")
+        bet = Bet(1, "Juan", "Perez", "12345678", "1990-01-01", "7574")
         self._prepare_proto(OpCode.REGISTER_SINGLE_BET, bet)
 
         self.handler.start()
@@ -40,7 +47,7 @@ class TestClientHandler(unittest.TestCase):
     def test_handle_batch_fails_if_storage_fails(self, mock_store):
         bets = [
             Bet(1, "Juan", "Perez", 12345678, "1990-01-01", 7574),
-            Bet(2, "Maria", "Gomez", 87654321, "1995-05-05", 1234)
+            Bet(1, "Maria", "Gomez", 87654321, "1995-05-05", 1234)
         ]
         mock_store.side_effect = Exception("Storage error")
         self._prepare_proto(OpCode.REGISTER_BATCH_OF_BETS, bets, is_batch=True)

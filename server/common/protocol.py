@@ -8,10 +8,15 @@ class ServerProtocol:
 
     def __init__(self, socket):
         self._socket = socket
+        self._client_id = None
 
     def read_client_id(self):
         client_id = self._read_int()
+        self._client_id = client_id
         return client_id
+    
+    def set_client_id(self, client_id):
+        self._client_id = client_id
 
     def read_action(self):
         action = self._socket.recv(self._CHAR_SIZE)
@@ -19,14 +24,13 @@ class ServerProtocol:
         return OpCode.from_bytes(action)
 
     def read_bet(self):
-        agency = self._read_int()
         first_name = self._read_string()
         last_name = self._read_string()
         document = self._read_int()
         birthdate = self._read_string()
         number = self._read_int()
 
-        return Bet(agency, first_name, last_name, document, birthdate, number)
+        return Bet(self._client_id, first_name, last_name, document, birthdate, number)
     
     def read_batch_of_bets(self):
         batch_size = self._read_int()

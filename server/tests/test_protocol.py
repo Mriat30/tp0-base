@@ -12,9 +12,8 @@ class TestProtocol(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def _create_bet(self, agency, first_name, last_name, document, birthdate, number):
+    def _create_bet(self, first_name, last_name, document, birthdate, number):
         return [
-            agency.to_bytes(4, 'big'),
             bytes([len(first_name)]), first_name.encode('utf-8'),
             bytes([len(last_name)]), last_name.encode('utf-8'),
             document.to_bytes(4, 'big'),
@@ -45,8 +44,8 @@ class TestProtocol(unittest.TestCase):
             self.protocol.read_action()
         
     def test_protocol_read_bet_success(self):
+        self.protocol.set_client_id(42)
         self.socket.recv.side_effect = self._create_bet(
-            agency=1,
             first_name='Mateo',
             last_name='Perez',
             document=40000000,
@@ -56,7 +55,7 @@ class TestProtocol(unittest.TestCase):
 
         bet = self.protocol.read_bet()
 
-        self.assertEqual(bet.agency, 1)
+        self.assertEqual(bet.agency, 42)
         self.assertEqual(bet.first_name, 'Mateo')
         self.assertEqual(bet.last_name, 'Perez')
         self.assertEqual(bet.document, 40000000)
@@ -71,7 +70,7 @@ class TestProtocol(unittest.TestCase):
             
     def test_read_bet_disconnection_during_name_length(self):
         self.socket.recv.side_effect = [
-            b'\x00\x00\x00\x01',
+            b'\x04',
             b''                  
         ]
 
@@ -80,7 +79,6 @@ class TestProtocol(unittest.TestCase):
 
     def test_read_bet_invalid_utf8_in_lastname(self):
         self.socket.recv.side_effect = [
-            b'\x00\x00\x00\x01', # Agencia
             b'\x04', b'Juan',    # Nombre OK
             b'\x02', b'\xff\xfe',# Apellido con bytes no UTF-8
         ]
@@ -107,10 +105,10 @@ class TestProtocol(unittest.TestCase):
         self.assertEqual(action, OpCode.REGISTER_BATCH_OF_BETS)
 
     def test_read_batch_of_bets_with_single_bet_success(self):
+        self.protocol.set_client_id(42)
         self.socket.recv.side_effect = [
             b'\x00\x00\x00\x01', # Cantidad de apuestas
         ] + self._create_bet(
-            agency=1,
             first_name='Mateo',
             last_name='Perez',
             document=40000000,
@@ -121,7 +119,7 @@ class TestProtocol(unittest.TestCase):
         bets = self.protocol.read_batch_of_bets()
 
         self.assertEqual(len(bets), 1)
-        self.assertEqual(bets[0].agency, 1)
+        self.assertEqual(bets[0].agency, 42)
         self.assertEqual(bets[0].first_name, 'Mateo')
         self.assertEqual(bets[0].last_name, 'Perez')
         self.assertEqual(bets[0].document, 40000000)
@@ -129,11 +127,11 @@ class TestProtocol(unittest.TestCase):
         self.assertEqual(bets[0].number, 7574)
     
     def test_read_batch_of_bets_with_multiple_bets_fail(self):
+        self.protocol.set_client_id(42)
         self.socket.recv.side_effect = [
             b'\x00\x00\x00\x02', # Cantidad = 2
             # --- Apuesta 1 ---
         ] + self._create_bet(
-            agency=1,
             first_name='Mateo',
             last_name='Perez',
             document=40000000,
@@ -141,7 +139,6 @@ class TestProtocol(unittest.TestCase):
             number=7574
         ) + [
             # --- Apuesta 2 ---
-            b'\x00\x00\x00\x01', # Agencia
             b'\x04', b'Juan',    # Nombre
             b'',                 # Apellido con disconexión del cliente
         ]
