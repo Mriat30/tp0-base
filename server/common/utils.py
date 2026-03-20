@@ -5,6 +5,7 @@ class OpCode(Enum):
     REGISTER_SINGLE_BET = 0x02
     REGISTER_BATCH_OF_BETS = 0x03
     BET_REGISTERED = 0x04
+    WINNERS = 0x05
 
     @classmethod
     def from_bytes(cls, raw_bytes):

@@ -1,6 +1,7 @@
 import socket
 from common.utils import OpCode
 from model.bet import Bet
+from model.lottery_winner import LotteryWinner
 
 class ServerProtocol:
     _CHAR_SIZE = 1
@@ -44,6 +45,14 @@ class ServerProtocol:
             self._socket.sendall(OpCode.BET_REGISTERED.value.to_bytes(self._CHAR_SIZE, byteorder='big'))
         except OSError:
             raise EOFError("Socket cerrado por el cliente")
+
+    def send_winners(self, list_of_winners: list[LotteryWinner]):
+        self._socket.sendall(OpCode.WINNERS.value.to_bytes(self._CHAR_SIZE, byteorder='big'))
+        winners_docs = [w.document for w in list_of_winners]
+        winners_str = ",".join(winners_docs)
+        winners_bytes = winners_str.encode('utf-8')
+        self._socket.sendall(len(winners_bytes).to_bytes(self._INT_SIZE, byteorder='big'))
+        self._socket.sendall(winners_bytes)
 
     def _read_int(self):
         raw = self._read_exactly(self._INT_SIZE)

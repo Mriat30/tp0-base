@@ -1,5 +1,6 @@
 from common.protocol import ServerProtocol
 from common.utils import OpCode
+from model.lottery_winner import LotteryWinner
 import unittest
 from unittest.mock import MagicMock
 import datetime
@@ -145,6 +146,25 @@ class TestProtocol(unittest.TestCase):
 
         with self.assertRaises(EOFError):
             self.protocol.read_batch_of_bets()
+
+    def test_send_winners_success(self):
+        winners = [
+            LotteryWinner("12345678"),
+            LotteryWinner("87654321"),
+            LotteryWinner("11111111")
+        ]
+        self.protocol.send_winners(winners)
+        
+        expected_opcode = OpCode.WINNERS.value.to_bytes(1, byteorder='big')
+        winners_str = "12345678,87654321,11111111"
+        winners_bytes = winners_str.encode('utf-8')
+        expected_length = len(winners_bytes).to_bytes(4, byteorder='big')
+        
+        calls = self.socket.sendall.call_args_list
+        self.assertEqual(len(calls), 3)
+        self.assertEqual(calls[0][0][0], expected_opcode)
+        self.assertEqual(calls[1][0][0], expected_length)
+        self.assertEqual(calls[2][0][0], winners_bytes)
     
 if __name__ == '__main__':
     unittest.main()
