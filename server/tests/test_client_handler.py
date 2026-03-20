@@ -10,7 +10,8 @@ class TestClientHandler(unittest.TestCase):
         self.mock_socket = MagicMock()
         self.mock_socket.getpeername.return_value = ('127.0.0.1', 12345)
         self.mock_log = MagicMock()
-        self.handler = ClientHandler(self.mock_socket, logger=self.mock_log)
+        self.mock_lottery = MagicMock()
+        self.handler = ClientHandler(self.mock_socket, self.mock_lottery, logger=self.mock_log)
         self.proto = self.handler._protocol
         self.proto.send_bet_registered = MagicMock()
 
@@ -45,8 +46,8 @@ class TestClientHandler(unittest.TestCase):
     @patch('common.client_handler.store_bets')
     def test_handle_batch_fails_if_storage_fails(self, mock_store):
         bets = [
-            Bet(1, "Juan", "Perez", 12345678, "1990-01-01", 7574),
-            Bet(1, "Maria", "Gomez", 87654321, "1995-05-05", 1234)
+            Bet(1, "Juan", "Perez", "12345678", "1990-01-01", "7574"),
+            Bet(1, "Maria", "Gomez", "87654321", "1995-05-05", "1234")
         ]
         mock_store.side_effect = Exception("Storage error")
         self._prepare_proto(OpCode.REGISTER_BATCH_OF_BETS, bets, is_batch=True)

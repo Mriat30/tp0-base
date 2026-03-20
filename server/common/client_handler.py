@@ -5,11 +5,12 @@ import logging
 import socket
 
 class ClientHandler:
-    def __init__(self, socket, logger=None):
+    def __init__(self, socket, lottery, logger=None):
         self._socket = socket
         self._protocol = ServerProtocol(self._socket)
         self._should_be_running = False
         self._logger = logger or logging.getLogger(__name__)
+        self._lottery = lottery
 
     def start(self):
         """
@@ -50,6 +51,10 @@ class ClientHandler:
             store_bets(bets)
             self._protocol.send_bet_registered()
             self._logger.info(f'action: apuesta_recibida | result: success | ip: {addr[0]} | cantidad: {len(bets)}')
+        elif action == OpCode.WAITING_FOR_WINNERS:
+            self._lottery.notify_done(self._protocol._client_id, self._protocol)
+            self._logger.info(f"action: waiting_for_winners | result: success | ip: {addr[0]} | client_id: {self._protocol._client_id}")
+            self._should_be_running = False
         else:
             self._logger.error(f"action: receive_message | result: fail | error: unknown_action")
 
