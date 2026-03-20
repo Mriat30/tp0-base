@@ -5,7 +5,7 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
-
+	"context"
 	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/src/domain"
 	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/src/model"
 	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/src/protocol"
@@ -51,8 +51,8 @@ func (c *Client) createClientSocket() error {
 }
 
 func (c *Client) StartClientLoop() {
-    c.should_be_running = true
-    c.handleSigterm()
+	ctx, cancel := context.WithCancel(context.Background())
+	c.handleSigterm(cancel)
     err := c.createClientSocket()
     if err != nil {
         log.Errorf("action: connect | result: fail | error: %v", err)
@@ -60,9 +60,9 @@ func (c *Client) StartClientLoop() {
     }
 
 	defer c.conn.Close()
-    proto := protocol.NewProtocol(c.conn, protocol.WithMaxBatchSize(8192))
+    proto := protocol.NewProtocol(c.conn)
     bookMaker := domain.NewBookmaker(proto, c.config.BetProvider, c.config.ID)
-    err = bookMaker.RegisterAll(c.config.BatchMaxAmount, c.config.LoopPeriod)
+    err = bookMaker.RegisterAll(ctx, c.config.BatchMaxAmount, c.config.LoopPeriod)
     if err != nil {
         log.Errorf("action: register_all | result: fail | client_id: %v | error: %v", c.config.ID, err)
     } else {
@@ -70,16 +70,13 @@ func (c *Client) StartClientLoop() {
     }
 }
 
-func (c *Client) handleSigterm() {
+func (c *Client) handleSigterm(cancel context.CancelFunc) {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGTERM)
 	go func() {
 		<-sigs
 		log.Infof("action: graceful_shutdown | result: in_progress")
-		c.should_be_running = false
-		if c.conn != nil {
-            c.conn.Close()
-        }
-
+		cancel()
+		c.conn.Close()
 	}()
 }

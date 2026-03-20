@@ -3,6 +3,7 @@ package domain
 import (
 	"io"
 	"time"
+	"context"
 	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/src/model"
 	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/src/protocol"
 	"github.com/op/go-logging"
@@ -24,12 +25,18 @@ func NewBookmaker(proto *protocol.Protocol, provider model.BetProvider, clientID
 	}
 }
 
-func (b *Bookmaker) RegisterAll(batchSize int, loopPeriod time.Duration) error {
+func (b *Bookmaker) RegisterAll(ctx context.Context, batchSize int, loopPeriod time.Duration) error {
 	for {
+		select {
+        case <-ctx.Done():
+            log.Infof("action: graceful_shutdown | result: success")
+            return nil
+        default:
+        }
 		batch, err := b.provider.NextBatch(batchSize)
 		if err == io.EOF {
 			log.Infof("action: procesamiento_finalizado | result: success | client_id: %v", b.id)
-			break
+			return nil
 		}
 		if err != nil {
 			log.Errorf("action: leer_batch | result: fail | client_id: %v | error: %v", b.id, err)
