@@ -9,6 +9,10 @@ class ServerProtocol:
     def __init__(self, socket):
         self._socket = socket
 
+    def read_client_id(self):
+        client_id = self._read_int()
+        return client_id
+
     def read_action(self):
         action = self._socket.recv(self._CHAR_SIZE)
         if not action: raise EOFError("Socket cerrado por el cliente")

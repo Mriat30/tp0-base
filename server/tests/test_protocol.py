@@ -22,6 +22,15 @@ class TestProtocol(unittest.TestCase):
             number.to_bytes(4, 'big')
         ]
 
+    def test_protocol_read_client_id_success(self):
+        self.socket.recv.side_effect = [
+            b'\x00\x00\x00\x2a'
+        ]
+
+        client_id = self.protocol.read_client_id()
+
+        self.assertEqual(client_id, 42)
+
     def test_protocol_read_action_register_single_bet_success(self):
         self.socket.recv.return_value = OpCode.REGISTER_SINGLE_BET.value.to_bytes(1, 'big')
         
