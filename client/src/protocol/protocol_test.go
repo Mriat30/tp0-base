@@ -66,7 +66,6 @@ func checkString(t *testing.T, r *bytes.Reader, want string) {
 }
 
 func checkBet(t *testing.T, r *bytes.Reader, bet model.Bet) {
-	checkClientID(t, r, ClientIDType(bet.Agency))
 	checkString(t, r, bet.FirstName)
 	checkString(t, r, bet.LastName)
 	checkDocument(t, r, DocumentType(bet.Document))

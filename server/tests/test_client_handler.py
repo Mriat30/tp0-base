@@ -21,7 +21,6 @@ class TestClientHandler(unittest.TestCase):
     def _prepare_proto(self, action, return_val, is_batch=False):
         self.proto.read_action = MagicMock(side_effect=[OpCode.CLIENT_ID, action, EOFError])
         
-        # Mock read_client_id to also update the protocol's internal client_id
         def mock_read_client_id():
             self.proto._client_id = 1
             return 1

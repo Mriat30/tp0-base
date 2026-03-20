@@ -15,7 +15,7 @@ import (
 var log = logging.MustGetLogger("log")
 
 type ClientConfig struct {
-	ID            string
+	ID            protocol.ClientIDType
 	ServerAddress string
 	LoopAmount    int
 	LoopPeriod    time.Duration

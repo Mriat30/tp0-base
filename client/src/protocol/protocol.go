@@ -80,7 +80,6 @@ func (p *Protocol) SendBatchOfBets(bets []model.Bet) error {
 }
 
 func (p *Protocol) writeBet(w io.Writer, bet model.Bet) {
-	binary.Write(w, binary.BigEndian, ClientIDType(bet.Agency))
 	p.writeString(w, bet.FirstName)
 	p.writeString(w, bet.LastName)
 	binary.Write(w, binary.BigEndian, DocumentType(bet.Document))

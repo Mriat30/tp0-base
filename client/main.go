@@ -5,12 +5,14 @@ import (
 	"os"
 	"strings"
 	"time"
+	"strconv"
 
 	"github.com/op/go-logging"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
 	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/src"
+	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/src/protocol"
 	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/src/reader"
 )
 
@@ -104,18 +106,25 @@ func main() {
 
 	// Print program config with debugging purposes
 	PrintConfig(v)
-	clientID := v.GetString("id")
-	filePath := fmt.Sprintf(dataPath, clientID)
+	clientIDStr := v.GetString("id")
+	filePath := fmt.Sprintf(dataPath, clientIDStr)
 	file, err := os.Open(filePath)
 	if err != nil {
 		log.Criticalf("action: open_file | result: fail | path: %s | error: %v", filePath, err)
 		return
 	}
 	defer file.Close()
-	provider := reader.NewCSVBetReader(file, clientID)
+	provider := reader.NewCSVBetReader(file, clientIDStr)
+	
+	clientIDNum, err := strconv.ParseUint(clientIDStr, 10, 32)
+	if err != nil {
+		log.Criticalf("action: parse_client_id | result: fail | client_id: %s | error: %v", clientIDStr, err)
+		return
+	}
+	
 	clientConfig := src.ClientConfig{
 		ServerAddress: v.GetString("server.address"),
-		ID:            v.GetString("id"),
+		ID:            protocol.ClientIDType(clientIDNum),
 		LoopAmount:    v.GetInt("loop.amount"),
 		LoopPeriod:    v.GetDuration("loop.period"),
 		BatchMaxAmount: v.GetInt("batch.maxAmount"),
