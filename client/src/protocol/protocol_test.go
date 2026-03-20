@@ -74,6 +74,18 @@ func checkBet(t *testing.T, r *bytes.Reader, bet model.Bet) {
 	checkBetNumber(t, r, BetNumberType(bet.Number))
 }
 
+func TestProtocol_SendClientId(t *testing.T) {
+	buf := new(bytes.Buffer)
+	proto := NewProtocol(buf)
+	clientID := ClientIDType(12345)
+
+	proto.SendClientId(clientID)
+	r := bytes.NewReader(buf.Bytes())
+
+	checkOpCode(t, r, OpCodeClientID)
+	checkClientID(t, r, clientID)
+}
+
 func TestProtocol_SendBet(t *testing.T) {
 	buf := new(bytes.Buffer)
 	proto := NewProtocol(buf)
@@ -94,7 +106,7 @@ func TestProtocol_SendBet(t *testing.T) {
 }
 
 func TestProtocol_ReadBetRegistered_Success(t *testing.T) {
-	buf := bytes.NewBuffer([]byte{0})
+	buf := bytes.NewBuffer([]byte{byte(OpCodeBetRegistered)})
 	proto := NewProtocol(buf)
 
 	err := proto.ReadBetRegistered()
@@ -104,7 +116,7 @@ func TestProtocol_ReadBetRegistered_Success(t *testing.T) {
 }
 
 func TestProtocol_ReadBetRegistered_Fail(t *testing.T) {
-	buf := bytes.NewBuffer([]byte{1})
+	buf := bytes.NewBuffer([]byte{byte(OpCode(99))})
 	proto := NewProtocol(buf)
 
 	err := proto.ReadBetRegistered()

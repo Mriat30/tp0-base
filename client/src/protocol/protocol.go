@@ -50,6 +50,12 @@ func NewProtocol(rw io.ReadWriter, opts ...Option) *Protocol {
     return p
 }
 
+func (p *Protocol) SendClientId(clientId ClientIDType) error {
+	binary.Write(p.rw, binary.BigEndian, OpCodeClientID)
+	binary.Write(p.rw, binary.BigEndian, clientId)
+	return nil
+}
+
 func (p *Protocol) SendBet(bet model.Bet) error {
 	binary.Write(p.rw, binary.BigEndian, OpCodeRegisterSingleBet)
 	p.writeBet(p.rw, bet)
