@@ -94,5 +94,11 @@ func (b *Bookmaker) waitAndReceiveWinners() error {
 	}
 	log.Infof("action: consulta_ganadores | result: success | client_id: %v | cant_ganadores: %d", b.id, len(winners))
 	
+	err = b.proto.SendAckWinners()
+	if err != nil {
+		log.Errorf("action: ack_ganadores | result: fail | client_id: %v | error: %v", b.id, err)
+		return err
+	}
+	
 	return nil
 }

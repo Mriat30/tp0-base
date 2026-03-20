@@ -12,6 +12,18 @@ class Lottery:
 
         if len(self._agencies_done) == self._total_agencys:
             self._run_lottery_and_notify()
+            return True
+        return False
+    
+    def wait_for_ack(self, protocol):
+        try:
+            action = protocol.read_action()
+            from common.utils import OpCode
+            if action != OpCode.ACK_WINNERS:
+                raise Exception(f"Expected ACK_WINNERS, got {action}")
+        except Exception as e:
+            self._logger.error(f"Error waiting for ACK: {e}")
+            raise
 
     def _run_lottery_and_notify(self):
         all_bets = list(load_bets())

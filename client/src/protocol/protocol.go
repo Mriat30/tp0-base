@@ -24,6 +24,7 @@ const (
 	OpCodeBetRegistered OpCode = 4
 	OpCodeWinnerAnnouncement OpCode = 5
 	OpCodeWaitingForWinners OpCode = 6
+	OpCodeAckWinners OpCode = 7
 )
 
 type Option func(*Protocol)
@@ -55,6 +56,11 @@ func NewProtocol(rw io.ReadWriter, opts ...Option) *Protocol {
 func (p *Protocol) SendClientId(clientId ClientIDType) error {
 	binary.Write(p.rw, binary.BigEndian, OpCodeClientID)
 	binary.Write(p.rw, binary.BigEndian, clientId)
+	return nil
+}
+
+func (p *Protocol) SendAckWinners() error {
+	binary.Write(p.rw, binary.BigEndian, OpCodeAckWinners)
 	return nil
 }
 

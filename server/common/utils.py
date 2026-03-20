@@ -7,6 +7,7 @@ class OpCode(Enum):
     BET_REGISTERED = 0x04
     WINNERS = 0x05
     WAITING_FOR_WINNERS = 0x06
+    ACK_WINNERS = 0x07
 
     @classmethod
     def from_bytes(cls, raw_bytes):
