@@ -22,6 +22,8 @@ const (
 	OpCodeRegisterSingleBet OpCode = 2
 	OpCodeRegisterBatchBets OpCode = 3
 	OpCodeBetRegistered OpCode = 4
+	OpCodeWinnerAnnouncement OpCode = 5
+	OpCodeWaitingForWinners OpCode = 6
 )
 
 type Option func(*Protocol)
@@ -54,6 +56,48 @@ func (p *Protocol) SendClientId(clientId ClientIDType) error {
 	binary.Write(p.rw, binary.BigEndian, OpCodeClientID)
 	binary.Write(p.rw, binary.BigEndian, clientId)
 	return nil
+}
+
+func (p *Protocol) SendWaitingForWinners() error {
+	binary.Write(p.rw, binary.BigEndian, OpCodeWaitingForWinners)
+	return nil
+}
+
+func (p *Protocol) ReadWinners() ([]model.Winner, error) {
+	var opCode OpCode
+	err := binary.Read(p.rw, binary.BigEndian, &opCode)
+	if err != nil {
+		return nil, err
+	}
+	if opCode != OpCodeWinnerAnnouncement {
+		return nil, fmt.Errorf("error: expected OpCodeWinnerAnnouncement, got %d", opCode)
+	}
+	
+	var length uint32
+	err = binary.Read(p.rw, binary.BigEndian, &length)
+	if err != nil {
+		return nil, err
+	}
+	
+	winnersBytes := make([]byte, length)
+	_, err = io.ReadFull(p.rw, winnersBytes)
+	if err != nil {
+		return nil, err
+	}
+	
+	winnersStr := string(winnersBytes)
+	if winnersStr == "" {
+		return []model.Winner{}, nil
+	}
+	
+	var winners []model.Winner
+	for _, doc := range bytes.Split(winnersBytes, []byte(",")) {
+		if len(doc) > 0 {
+			winners = append(winners, model.Winner{Document: string(doc)})
+		}
+	}
+	
+	return winners, nil
 }
 
 func (p *Protocol) SendBet(bet model.Bet) error {

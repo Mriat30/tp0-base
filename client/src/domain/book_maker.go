@@ -33,6 +33,20 @@ func (b *Bookmaker) RegisterAll(ctx context.Context, batchSize int, loopPeriod t
 	}
 	log.Infof("action: handshake | result: success | client_id: %v", b.id)
 
+	err = b.sendBatches(ctx, batchSize, loopPeriod)
+	if err != nil {
+		return err
+	}
+	
+	err = b.waitAndReceiveWinners()
+	if err != nil {
+		return err
+	}
+	
+	return nil
+}
+
+func (b *Bookmaker) sendBatches(ctx context.Context, batchSize int, loopPeriod time.Duration) error {
 	for {
 		select {
         case <-ctx.Done():
@@ -43,7 +57,7 @@ func (b *Bookmaker) RegisterAll(ctx context.Context, batchSize int, loopPeriod t
 		batch, err := b.provider.NextBatch(batchSize)
 		if err == io.EOF {
 			log.Infof("action: procesamiento_finalizado | result: success | client_id: %v", b.id)
-			return nil
+			break
 		}
 		if err != nil {
 			log.Errorf("action: leer_batch | result: fail | client_id: %v | error: %v", b.id, err)
@@ -62,5 +76,23 @@ func (b *Bookmaker) RegisterAll(ctx context.Context, batchSize int, loopPeriod t
 		log.Infof("action: batch_procesado | result: success | client_id: %v | cantidad: %d", b.id, len(batch))
 		time.Sleep(loopPeriod)
 	}
+	return nil
+}
+
+func (b *Bookmaker) waitAndReceiveWinners() error {
+	err := b.proto.SendWaitingForWinners()
+	if err != nil {
+		log.Errorf("action: espera_ganadores | result: fail | client_id: %v | error: %v", b.id, err)
+		return err
+	}
+	log.Infof("action: espera_ganadores | result: success | client_id: %v", b.id)
+	
+	winners, err := b.proto.ReadWinners()
+	if err != nil {
+		log.Errorf("action: consulta_ganadores | result: fail | client_id: %v | error: %v", b.id, err)
+		return err
+	}
+	log.Infof("action: consulta_ganadores | result: success | client_id: %v | cant_ganadores: %d", b.id, len(winners))
+	
 	return nil
 }
