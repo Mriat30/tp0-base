@@ -12,7 +12,6 @@ type OpCode uint8
 type ClientIDType uint32
 type DocumentType uint32
 type BetNumberType uint32
-type ResponseCode uint8
 
 const (
 	DefaultMaxBatchSize int = 8192 // Default max batch size is 8KB
@@ -84,7 +83,7 @@ func (p *Protocol) writeBet(w io.Writer, bet model.Bet) {
 }
 
 func (p *Protocol) ReadBetRegistered() error {
-	var ack ResponseCode
+	var ack OpCode
 	err := binary.Read(p.rw, binary.BigEndian, &ack)
 	if err != nil {
 		return err
