@@ -8,9 +8,21 @@ import (
     "github.com/7574-sistemas-distribuidos/docker-compose-init/client/src/model"
 )
 
+type OpCode uint8
+type ClientIDType uint32
+type DocumentType uint32
+type BetNumberType uint32
+type ResponseCode uint8
+
 const (
-    RegisterSingleBet uint8 = 1
-    RegisterBatchBets uint8 = 2
+	DefaultMaxBatchSize int = 8192 // Default max batch size is 8KB
+)
+
+const (
+	OpCodeClientID OpCode = 1
+	OpCodeRegisterSingleBet OpCode = 2
+	OpCodeRegisterBatchBets OpCode = 3
+	OpCodeBetRegistered OpCode = 4
 )
 
 type Option func(*Protocol)
@@ -29,7 +41,7 @@ func WithMaxBatchSize(maxBatchSize int) func(*Protocol) {
 func NewProtocol(rw io.ReadWriter, opts ...Option) *Protocol {
     p := &Protocol{
         rw:           rw,
-        maxBatchSize: 8192, // Default max batch size is 8KB
+        maxBatchSize: DefaultMaxBatchSize,
     }
 
     for _, opt := range opts {
@@ -40,7 +52,7 @@ func NewProtocol(rw io.ReadWriter, opts ...Option) *Protocol {
 }
 
 func (p *Protocol) SendBet(bet model.Bet) error {
-	binary.Write(p.rw, binary.BigEndian, RegisterSingleBet)
+	binary.Write(p.rw, binary.BigEndian, OpCodeRegisterSingleBet)
 	p.writeBet(p.rw, bet)
 	return nil
 }
@@ -48,7 +60,7 @@ func (p *Protocol) SendBet(bet model.Bet) error {
 func (p *Protocol) SendBatchOfBets(bets []model.Bet) error {
     buf := new(bytes.Buffer)
 
-	binary.Write(buf, binary.BigEndian, RegisterBatchBets)
+	binary.Write(buf, binary.BigEndian, OpCodeRegisterBatchBets)
 	binary.Write(buf, binary.BigEndian, uint32(len(bets)))
 	for _, bet := range bets {
 		p.writeBet(buf, bet)
@@ -63,16 +75,16 @@ func (p *Protocol) SendBatchOfBets(bets []model.Bet) error {
 }
 
 func (p *Protocol) writeBet(w io.Writer, bet model.Bet) {
-	binary.Write(w, binary.BigEndian, bet.Agency)
+	binary.Write(w, binary.BigEndian, ClientIDType(bet.Agency))
 	p.writeString(w, bet.FirstName)
 	p.writeString(w, bet.LastName)
-	binary.Write(w, binary.BigEndian, bet.Document)
+	binary.Write(w, binary.BigEndian, DocumentType(bet.Document))
 	p.writeString(w, bet.Birthdate)
-	binary.Write(w, binary.BigEndian, bet.Number)
+	binary.Write(w, binary.BigEndian, BetNumberType(bet.Number))
 }
 
 func (p *Protocol) ReadBetRegistered() error {
-	var ack uint8
+	var ack ResponseCode
 	err := binary.Read(p.rw, binary.BigEndian, &ack)
 	if err != nil {
 		return err

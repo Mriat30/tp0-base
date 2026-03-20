@@ -7,6 +7,38 @@ import (
 	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/src/model"
 )
 
+func checkOpCode(t *testing.T, r *bytes.Reader, want OpCode) {
+	var got OpCode
+	binary.Read(r, binary.BigEndian, &got)
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func checkClientID(t *testing.T, r *bytes.Reader, want ClientIDType) {
+	var got ClientIDType
+	binary.Read(r, binary.BigEndian, &got)
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func checkDocument(t *testing.T, r *bytes.Reader, want DocumentType) {
+	var got DocumentType
+	binary.Read(r, binary.BigEndian, &got)
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func checkBetNumber(t *testing.T, r *bytes.Reader, want BetNumberType) {
+	var got BetNumberType
+	binary.Read(r, binary.BigEndian, &got)
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
 func checkUint8(t *testing.T, r *bytes.Reader, want uint8) {
 	var got uint8
 	binary.Read(r, binary.BigEndian, &got)
@@ -34,12 +66,12 @@ func checkString(t *testing.T, r *bytes.Reader, want string) {
 }
 
 func checkBet(t *testing.T, r *bytes.Reader, bet model.Bet) {
-	checkUint32(t, r, bet.Agency)
+	checkClientID(t, r, ClientIDType(bet.Agency))
 	checkString(t, r, bet.FirstName)
 	checkString(t, r, bet.LastName)
-	checkUint32(t, r, bet.Document)
+	checkDocument(t, r, DocumentType(bet.Document))
 	checkString(t, r, bet.Birthdate)
-	checkUint32(t, r, bet.Number)
+	checkBetNumber(t, r, BetNumberType(bet.Number))
 }
 
 func TestProtocol_SendBet(t *testing.T) {
@@ -57,7 +89,7 @@ func TestProtocol_SendBet(t *testing.T) {
 	proto.SendBet(bet)
 	r := bytes.NewReader(buf.Bytes())
 
-	checkUint8(t, r, 1)
+	checkOpCode(t, r, OpCodeRegisterSingleBet)
 	checkBet(t, r, bet)
 }
 
@@ -105,7 +137,7 @@ func TestProtocol_SendBatchOfBets_Success(t *testing.T) {
 
 	proto.SendBatchOfBets(bets)
 	r := bytes.NewReader(buf.Bytes())
-	checkUint8(t, r, 2)
+	checkOpCode(t, r, OpCodeRegisterBatchBets)
 	checkUint32(t, r, 2)
 
 	for _, bet := range bets {
