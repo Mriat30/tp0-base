@@ -1,6 +1,5 @@
 from common.protocol import ServerProtocol
-from common.utils import ActionType
-from model.bet import Bet
+from common.utils import OpCode
 import unittest
 from unittest.mock import MagicMock
 import datetime
@@ -24,11 +23,11 @@ class TestProtocol(unittest.TestCase):
         ]
 
     def test_protocol_read_action_register_single_bet_success(self):
-        self.socket.recv.return_value = b'\x01' 
+        self.socket.recv.return_value = OpCode.REGISTER_SINGLE_BET.value.to_bytes(1, 'big')
         
         action = self.protocol.read_action()
         
-        self.assertEqual(action, ActionType.REGISTER_SINGLE_BET)
+        self.assertEqual(action, OpCode.REGISTER_SINGLE_BET)
 
     def test_protocol_read_action_client_disconnection(self):
         self.socket.recv.return_value = b'' 
@@ -83,7 +82,7 @@ class TestProtocol(unittest.TestCase):
     def test_send_bet_registered_writes_successfully(self):
         self.protocol.send_bet_registered()
         
-        self.socket.sendall.assert_called_once_with(self.protocol._SEND_BET_REGISTERED_RESPONSE)
+        self.socket.sendall.assert_called_once_with(OpCode.BET_REGISTERED.value.to_bytes(self.protocol._CHAR_SIZE, byteorder='big'))
 
     def test_send_bet_registered_client_disconnection(self):
         self.socket.sendall.side_effect = OSError("Socket cerrado por el cliente")
@@ -92,11 +91,11 @@ class TestProtocol(unittest.TestCase):
             self.protocol.send_bet_registered()
 
     def test_protocol_read_action_register_batch_of_bets_success(self):
-        self.socket.recv.return_value = b'\x02' 
+        self.socket.recv.return_value = OpCode.REGISTER_BATCH_OF_BETS.value.to_bytes(1, 'big')
         
         action = self.protocol.read_action()
         
-        self.assertEqual(action, ActionType.REGISTER_BATCH_OF_BETS)
+        self.assertEqual(action, OpCode.REGISTER_BATCH_OF_BETS)
 
     def test_read_batch_of_bets_with_single_bet_success(self):
         self.socket.recv.side_effect = [

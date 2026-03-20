@@ -1,5 +1,5 @@
 from .protocol import ServerProtocol
-from .protocol import ActionType
+from .protocol import OpCode
 from model.bet import store_bets
 import logging
 import socket
@@ -36,12 +36,12 @@ class ClientHandler:
             self.stop()
 
     def _process_action(self, action, addr):
-        if action == ActionType.REGISTER_SINGLE_BET:
+        if action == OpCode.REGISTER_SINGLE_BET:
             bet = self._protocol.read_bet()
             store_bets([bet])
             self._protocol.send_bet_registered()
             self._logger.info(f'action: apuesta_recibida | result: success | ip: {addr[0]} | dni: {bet.document}')
-        elif action == ActionType.REGISTER_BATCH_OF_BETS:
+        elif action == OpCode.REGISTER_BATCH_OF_BETS:
             bets = self._protocol.read_batch_of_bets()
             store_bets(bets)
             self._protocol.send_bet_registered()

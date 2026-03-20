@@ -1,8 +1,10 @@
 from enum import Enum
 
-class ActionType(Enum):
-    REGISTER_SINGLE_BET = 0x01
-    REGISTER_BATCH_OF_BETS = 0x02
+class OpCode(Enum):
+    CLIENT_ID = 0x01
+    REGISTER_SINGLE_BET = 0x02
+    REGISTER_BATCH_OF_BETS = 0x03
+    BET_REGISTERED = 0x04
 
     @classmethod
     def from_bytes(cls, raw_bytes):

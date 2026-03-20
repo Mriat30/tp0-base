@@ -1,11 +1,10 @@
 import socket
-from common.utils import ActionType
+from common.utils import OpCode
 from model.bet import Bet
 
 class ServerProtocol:
     _CHAR_SIZE = 1
     _INT_SIZE = 4
-    _SEND_BET_REGISTERED_RESPONSE = b'\x00'
 
     def __init__(self, socket):
         self._socket = socket
@@ -13,7 +12,7 @@ class ServerProtocol:
     def read_action(self):
         action = self._socket.recv(self._CHAR_SIZE)
         if not action: raise EOFError("Socket cerrado por el cliente")
-        return ActionType.from_bytes(action)
+        return OpCode.from_bytes(action)
 
     def read_bet(self):
         agency = self._read_int()
@@ -34,7 +33,7 @@ class ServerProtocol:
 
     def send_bet_registered(self):
         try:
-            self._socket.sendall(self._SEND_BET_REGISTERED_RESPONSE)
+            self._socket.sendall(OpCode.BET_REGISTERED.value.to_bytes(self._CHAR_SIZE, byteorder='big'))
         except OSError:
             raise EOFError("Socket cerrado por el cliente")
 

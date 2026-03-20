@@ -2,7 +2,7 @@ import unittest
 import os
 from unittest.mock import MagicMock, patch
 from common.client_handler import ClientHandler
-from common.protocol import ActionType
+from common.protocol import OpCode
 from model.bet import Bet, STORAGE_FILEPATH
 
 class TestClientHandler(unittest.TestCase):
@@ -28,7 +28,7 @@ class TestClientHandler(unittest.TestCase):
     @patch('common.client_handler.store_bets')
     def test_handle_single_bet_success(self, mock_store):
         bet = Bet("1", "Juan", "Perez", "12345678", "1990-01-01", "7574")
-        self._prepare_proto(ActionType.REGISTER_SINGLE_BET, bet)
+        self._prepare_proto(OpCode.REGISTER_SINGLE_BET, bet)
 
         self.handler.start()
 
@@ -43,7 +43,7 @@ class TestClientHandler(unittest.TestCase):
             Bet(2, "Maria", "Gomez", 87654321, "1995-05-05", 1234)
         ]
         mock_store.side_effect = Exception("Storage error")
-        self._prepare_proto(ActionType.REGISTER_BATCH_OF_BETS, bets, is_batch=True)
+        self._prepare_proto(OpCode.REGISTER_BATCH_OF_BETS, bets, is_batch=True)
 
         self.handler.start()
 
