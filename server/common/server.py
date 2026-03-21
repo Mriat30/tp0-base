@@ -4,6 +4,7 @@ import signal
 from common.client_handler import ClientHandler
 from common.lottery import Lottery
 from common.protocol import ServerProtocol
+import threading
 
 class Server:
 
@@ -19,7 +20,7 @@ class Server:
         self._server_socket.settimeout(accept_timeout)
         self._should_be_running = False
         self._lottery = Lottery(n_clients, logging.getLogger(__name__))
-        self.client = None
+        self._clients = []
         signal.signal(signal.SIGTERM, self.__handle_sigterm)
 
 
@@ -33,11 +34,14 @@ class Server:
         """
         self._should_be_running = True
         while self._should_be_running:
+            self.__reaper()
             client_socket = self.__accept_new_connection()
             if client_socket:
                 protocol = ServerProtocol(client_socket, logging.getLogger(__name__))
-                self.client = ClientHandler(protocol, self._lottery, logging.getLogger(__name__))
-                self.client.start() 
+                handler = ClientHandler(protocol, self._lottery, logging.getLogger(__name__))
+                thread = threading.Thread(target=handler.start)
+                self.client.append((thread,handler))
+                thread.start()
 
         logging.info("action: graceful_shutdown | result: success")
         self.__stop()
@@ -64,15 +68,23 @@ class Server:
         self._should_be_running = False
     
     def __stop(self):
-        logging.info("action: graceful_shutdown | result: in_progress")
-        self.__clear()
+        for thread, handler in self._clients:
+            handler.stop()
+
+        for thread, handler in self._clients:
+            thread.join(timeout=5.0)
+            if thread.is_alive():
+                logging.warning("action: graceful_shutdown | result: timeout")
+
         self._server_socket.close()
         logging.info("action: graceful_shutdown | result: success")
 
-    def __clear(self):
-        client = self.client
-        if client is None:
-            return
-        else:
-            client.stop()
-            self.client = None
+    def __reaper(self):
+        alive = []
+        for thread, handler in self._threads:
+            if thread.is_alive():
+                alive.append((thread, handler))
+            else:
+                thread.join()
+                logging.debug("action: thread_reaped | result: success")
+        self._clients = alive
