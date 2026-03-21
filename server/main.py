@@ -53,7 +53,7 @@ def main():
                   f"accept_timeout: {accept_timeout} | n_clients: {n_clients}")
 
     # Initialize server and start server loop
-    server = Server(port, listen_backlog, accept_timeout, n_clients)
+    server = Server(port, listen_backlog, n_clients, accept_timeout)
     server.run()
 
 def initialize_log(logging_level):
