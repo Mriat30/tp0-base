@@ -3,10 +3,11 @@ from model.bet import store_bets
 import logging
 
 class ClientHandler:
-    def __init__(self, protocol, lottery, logger=None):
+    def __init__(self, protocol, bet_storage, lottery, logger=None):
         self._protocol = protocol
         self._should_be_running = False
         self._logger = logger or logging.getLogger(__name__)
+        self._bet_storage = bet_storage
         self._lottery = lottery
         self._client_id = None
 
@@ -41,16 +42,16 @@ class ClientHandler:
     def _process_action(self, action, addr):
         if action == OpCode.REGISTER_SINGLE_BET:
             bet = self._protocol.read_bet()
-            self._lottery.store_bets([bet])
+            self._bet_storage.store([bet])
             self._protocol.send_bet_registered()
             self._logger.info(f'action: apuesta_recibida | result: success | ip: {addr[0]} | dni: {bet.document}')
         elif action == OpCode.REGISTER_BATCH_OF_BETS:
             bets = self._protocol.read_batch_of_bets()
-            self._lottery.store_bets(bets)
+            self._bet_storage.store(bets)
             self._logger.info(f'action: apuesta_recibida | result: success | ip: {addr[0]} | cantidad: {len(bets)}')
         elif action == OpCode.WAITING_FOR_WINNERS:
             agency_id = self._client_id
-            winners = self._lottery.notify_done(agency_id)
+            winners = self._lottery.get_winners(agency_id)
             self._logger.info(f"action: waiting_for_winners | result: success")
             self._protocol.send_winners(winners)
             self._should_be_running = False

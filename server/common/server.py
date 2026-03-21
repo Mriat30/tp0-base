@@ -4,6 +4,7 @@ import signal
 from common.client_handler import ClientHandler
 from common.lottery import Lottery
 from common.protocol import ServerProtocol
+from common.bet_storage import BetStorage
 import threading
 
 class Server:
@@ -19,6 +20,7 @@ class Server:
             accept_timeout = self._DEFAULT_ACCEPT_TIMEOUT
         self._server_socket.settimeout(accept_timeout)
         self._should_be_running = False
+        self._bet_storage = BetStorage()
         self._lottery = Lottery(n_clients, logging.getLogger(__name__))
         self._clients = []
         signal.signal(signal.SIGTERM, self.__handle_sigterm)
@@ -38,7 +40,7 @@ class Server:
             client_socket = self.__accept_new_connection()
             if client_socket:
                 protocol = ServerProtocol(client_socket, logging.getLogger(__name__))
-                handler = ClientHandler(protocol, self._lottery, logging.getLogger(__name__))
+                handler = ClientHandler(protocol, self._bet_storage, self._lottery, logging.getLogger(__name__))
                 thread = threading.Thread(target=handler.start)
                 self._clients.append((thread,handler))
                 thread.start()

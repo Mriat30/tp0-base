@@ -1,36 +1,35 @@
-from model.bet import has_won, load_bets, store_bets
+# common/lottery.py
+from threading import Event, Lock
+from model.bet import has_won
 from model.lottery_winner import LotteryWinner
-from threading import Lock, Condition
 
 class Lottery:
-    def __init__(self, total_agencies, logger):
+    def __init__(self, total_agencies, logger, storage):
         self._agencies_done = set()
         self._total_agencies = total_agencies
         self._logger = logger
-        self._storage_lock = Lock()   
-        self._condition = Condition()
-        self._winners = None
-
-    def store_bets(self, bets):
-        with self._storage_lock:
-            store_bets(bets)
+        self._storage = storage
+        self._lottery_ready = Event()
+        self._lock = Lock()
+        self._winners = {}
 
     def notify_done(self, agency_id):
-        with self._condition:
+        with self._lock:
             self._agencies_done.add(agency_id)
             if len(self._agencies_done) == self._total_agencies:
-                self._winners = self._load_bets_safe()
-                self._logger.info("action: sorteo | result: success")
-                self._condition.notify_all()
-            else:
-                self._condition.wait_for(lambda: self._winners is not None)
+                self._run_lottery()
 
+    def get_winners(self, agency_id):
+        self._lottery_ready.wait()
         return [
-            LotteryWinner(bet.document)
-            for bet in self._winners
-            if bet.agency == agency_id and has_won(bet)
+            LotteryWinner(doc)
+            for doc in self._winners.get(agency_id, [])
         ]
 
-    def _load_bets_safe(self):
-        with self._storage_lock:
-            return list(load_bets())
+    def _run_lottery(self):
+        all_bets = self._storage.load()
+        for bet in all_bets:
+            if has_won(bet):
+                self._winners.setdefault(bet.agency, []).append(bet.document)
+        self._logger.info("action: sorteo | result: success")
+        self._lottery_ready.set()
