@@ -49,9 +49,10 @@ class ClientHandler:
             self._protocol.send_bet_registered()
             self._logger.info(f'action: apuesta_recibida | result: success | ip: {addr[0]} | cantidad: {len(bets)}')
         elif action == OpCode.WAITING_FOR_WINNERS:
-            self._lottery.notify_done(self._protocol._client_id, self._protocol)
-            self._logger.info(f"action: waiting_for_winners | result: success | ip: {addr[0]} | client_id: {self._protocol._client_id}")
-            self._protocol = None
+            agency_id = self._protocol.client_id
+            winners = self._lottery.notify_done(agency_id, self._protocol)
+            self._logger.info(f"action: waiting_for_winners | result: success")
+            self._protocol.send_winners(winners)
             self._should_be_running = False
         else:
             self._logger.error(f"action: receive_message | result: fail | error: unknown_action")
