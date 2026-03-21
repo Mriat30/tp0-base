@@ -8,27 +8,29 @@ import threading
 class TestLottery(unittest.TestCase):
     def setUp(self):
         self.mock_logger = MagicMock()
-        self.lottery = Lottery(total_agencies=2, logger=self.mock_logger)
+        self.mock_storage = MagicMock()
+        self.lottery = Lottery(total_agencies=2, storage=self.mock_storage, logger=self.mock_logger)
 
-    @patch('common.lottery.load_bets')
     @patch('common.lottery.has_won')
-    def test_notify_done_returns_winners_when_all_agencies_done(self, mock_has_won, mock_load_bets):
+    def test_notify_done_returns_winners_when_all_agencies_done(self, mock_has_won):
         bets = [
             Bet(1, "Juan", "Perez", "12345678", "1990-01-01", 7574),
             Bet(1, "Maria", "Gomez", "87654321", "1995-05-05", 1234),
             Bet(2, "Carlos", "Lopez", "11111111", "1985-03-15", 7574),
         ]
-        mock_load_bets.return_value = bets
+        self.mock_storage.load.return_value = bets
         mock_has_won.side_effect = lambda bet: bet.number == 7574
 
         winners_agency_1 = []
         winners_agency_2 = []
 
         def agency_1():
-            winners_agency_1.extend(self.lottery.notify_done(1))
+            self.lottery.notify_done(1)
+            winners_agency_1.extend(self.lottery.get_winners(1))
 
         def agency_2():
-            winners_agency_2.extend(self.lottery.notify_done(2))
+            self.lottery.notify_done(2)
+            winners_agency_2.extend(self.lottery.get_winners(2))
 
         t1 = threading.Thread(target=agency_1)
         t2 = threading.Thread(target=agency_2)
