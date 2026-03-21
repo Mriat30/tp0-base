@@ -81,7 +81,7 @@ class Server:
 
     def __reaper(self):
         alive = []
-        for thread, handler in self._threads:
+        for thread, handler in self._clients:
             if thread.is_alive():
                 alive.append((thread, handler))
             else:
