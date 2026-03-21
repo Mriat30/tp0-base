@@ -40,7 +40,7 @@ class Server:
                 protocol = ServerProtocol(client_socket, logging.getLogger(__name__))
                 handler = ClientHandler(protocol, self._lottery, logging.getLogger(__name__))
                 thread = threading.Thread(target=handler.start)
-                self.client.append((thread,handler))
+                self._clients.append((thread,handler))
                 thread.start()
 
         logging.info("action: graceful_shutdown | result: success")
