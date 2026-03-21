@@ -8,6 +8,7 @@ class ClientHandler:
         self._should_be_running = False
         self._logger = logger or logging.getLogger(__name__)
         self._lottery = lottery
+        self._client_id = None
 
     def start(self):
         """
@@ -21,8 +22,8 @@ class ClientHandler:
             addr = self._protocol._socket.getpeername()
             
             action = self._protocol.read_action()
-            self._protocol.read_client_id()
-            self._logger.debug(f"action: handshake | result: success | ip: {addr[0]} | client_id: {self._protocol._client_id}")
+            self._client_id = self._protocol.read_client_id()
+            self._logger.debug(f"action: handshake | result: success | ip: {addr[0]} | client_id: {self._client_id}")
             
             while self._should_be_running:
                 action = self._protocol.read_action()
@@ -40,17 +41,16 @@ class ClientHandler:
     def _process_action(self, action, addr):
         if action == OpCode.REGISTER_SINGLE_BET:
             bet = self._protocol.read_bet()
-            store_bets([bet])
+            self._lottery.store_bets([bet])
             self._protocol.send_bet_registered()
             self._logger.info(f'action: apuesta_recibida | result: success | ip: {addr[0]} | dni: {bet.document}')
         elif action == OpCode.REGISTER_BATCH_OF_BETS:
             bets = self._protocol.read_batch_of_bets()
-            store_bets(bets)
-            self._protocol.send_bet_registered()
+            self._lottery.store_bets(bets)
             self._logger.info(f'action: apuesta_recibida | result: success | ip: {addr[0]} | cantidad: {len(bets)}')
         elif action == OpCode.WAITING_FOR_WINNERS:
-            agency_id = self._protocol.client_id
-            winners = self._lottery.notify_done(agency_id, self._protocol)
+            agency_id = self._client_id
+            winners = self._lottery.notify_done(agency_id)
             self._logger.info(f"action: waiting_for_winners | result: success")
             self._protocol.send_winners(winners)
             self._should_be_running = False
