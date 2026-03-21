@@ -67,6 +67,17 @@ class TestClientHandler(unittest.TestCase):
         self.proto.send_bet_registered.assert_not_called()
         self.assertTrue(any("result: fail" in str(c) for c in self.mock_log.mock_calls))
         self.proto.close.assert_called()
+
+    def test_handle_invalid_handshake_opcode(self):
+        self.proto.read_action = MagicMock(return_value=OpCode.REGISTER_SINGLE_BET)
+
+        self.handler.start()
+
+        self.proto.read_client_id.assert_not_called()
+        self.mock_storage.store.assert_not_called()
+        self.proto.send_bet_registered.assert_not_called()
+        self.assertTrue(any("result: fail" in str(c) for c in self.mock_log.mock_calls))
+        self.proto.close.assert_called_once()
             
 if __name__ == '__main__':
     unittest.main()

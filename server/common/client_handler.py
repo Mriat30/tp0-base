@@ -23,6 +23,8 @@ class ClientHandler:
             addr = self._protocol._socket.getpeername()
             
             action = self._protocol.read_action()
+            if action != OpCode.CLIENT_ID:
+                raise ValueError(f"invalid_handshake_opcode: {action}")
             self._client_id = self._protocol.read_client_id()
             self._logger.debug(f"action: handshake | result: success | ip: {addr[0]} | client_id: {self._client_id}")
             
