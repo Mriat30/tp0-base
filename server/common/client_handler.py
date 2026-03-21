@@ -42,14 +42,10 @@ class ClientHandler:
     def _process_action(self, action, addr):
         if action == OpCode.REGISTER_SINGLE_BET:
             bet = self._protocol.read_bet()
-            self._bet_storage.store([bet])
-            self._protocol.send_bet_registered()
-            self._logger.info(f'action: apuesta_recibida | result: success | ip: {addr[0]} | dni: {bet.document}')
+            self._process_store_bets([bet], addr)
         elif action == OpCode.REGISTER_BATCH_OF_BETS:
             bets = self._protocol.read_batch_of_bets()
-            self._bet_storage.store(bets)
-            self._protocol.send_bet_registered()
-            self._logger.info(f'action: apuesta_recibida | result: success | ip: {addr[0]} | cantidad: {len(bets)}')
+            self._process_store_bets(bets, addr)
         elif action == OpCode.WAITING_FOR_WINNERS:
             agency_id = self._client_id
             self._lottery.notify_done(agency_id)
@@ -58,6 +54,17 @@ class ClientHandler:
             self._should_be_running = False
         else:
             self._logger.error(f"action: receive_message | result: fail | error: unknown_action")
+
+    
+    def _process_store_bets(self, bets, addr):
+        try:
+            self._bet_storage.store(bets)
+            self._protocol.send_bet_registered()
+            self._logger.info(f'action: apuesta_recibida | result: success | ip: {addr[0]} | cantidad: {len(bets)} | dni: {bets[0].document}')
+        except Exception as e:
+            self.stop()
+            self._logger.error(f"action: apuesta_recibida | result: fail | error: {e}")
+
 
     def stop(self):
         self._should_be_running = False

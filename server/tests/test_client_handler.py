@@ -54,6 +54,18 @@ class TestClientHandler(unittest.TestCase):
         self.proto.send_bet_registered.assert_not_called()
         self.assertTrue(any("result: fail" in str(c) for c in self.mock_log.mock_calls))
         self.proto.close.assert_called_once()
-        
+
+    def test_handle_batch_fails_if_storage_fails(self):
+        bets = [Bet(1, "Juan", "Perez", "12345678", "1990-01-01", "7574")]
+        self.mock_storage.store.side_effect = OSError("Storage error")
+        self._prepare_proto(OpCode.REGISTER_BATCH_OF_BETS, bets, is_batch=True)
+
+        self.handler.start()
+
+        self.mock_storage.store.assert_called_once_with(bets)
+        self.proto.send_bet_registered.assert_not_called()
+        self.assertTrue(any("result: fail" in str(c) for c in self.mock_log.mock_calls))
+        self.proto.close.assert_called()
+            
 if __name__ == '__main__':
     unittest.main()
