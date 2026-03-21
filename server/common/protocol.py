@@ -71,3 +71,14 @@ class ServerProtocol:
             if not packet: raise EOFError("Socket cerrado por el cliente")
             data += packet
         return data
+
+    def close(self):
+        if self._socket:
+            try:
+                self._socket.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+            
+            self._socket.close()
+            self._socket = None 
+            self._logger.debug("action: socket_closed | result: success")

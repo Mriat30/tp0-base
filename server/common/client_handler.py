@@ -5,9 +5,8 @@ import logging
 import socket
 
 class ClientHandler:
-    def __init__(self, socket, lottery, logger=None):
-        self._socket = socket
-        self._protocol = ServerProtocol(self._socket)
+    def __init__(self, protocol, lottery, logger=None):
+        self._protocol = protocol
         self._should_be_running = False
         self._logger = logger or logging.getLogger(__name__)
         self._lottery = lottery
@@ -21,7 +20,7 @@ class ClientHandler:
         """
         self._should_be_running = True
         try:
-            addr = self._socket.getpeername()
+            addr = self._protocol._socket.getpeername()
             
             action = self._protocol.read_action()
             self._protocol.read_client_id()
@@ -54,18 +53,12 @@ class ClientHandler:
         elif action == OpCode.WAITING_FOR_WINNERS:
             self._lottery.notify_done(self._protocol._client_id, self._protocol)
             self._logger.info(f"action: waiting_for_winners | result: success | ip: {addr[0]} | client_id: {self._protocol._client_id}")
+            self._protocol = None
             self._should_be_running = False
         else:
             self._logger.error(f"action: receive_message | result: fail | error: unknown_action")
 
     def stop(self):
         self._should_be_running = False
-        if self._socket:
-            try:
-                self._socket.shutdown(socket.SHUT_RDWR)
-            except OSError:
-                pass
-            
-            self._socket.close()
-            self._socket = None 
-            self._logger.debug("action: socket_closed | result: success")
+        if self._protocol:
+            self._protocol.close()

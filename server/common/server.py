@@ -3,6 +3,7 @@ import logging
 import signal
 from common.client_handler import ClientHandler
 from common.lottery import Lottery
+from common.protocol import ServerProtocol
 
 class Server:
 
@@ -34,7 +35,7 @@ class Server:
         while self._should_be_running:
             client_socket = self.__accept_new_connection()
             if client_socket:
-                self.client = ClientHandler(client_socket, self._lottery, logging.getLogger(__name__))
+                self.client = ClientHandler(ServerProtocol(client_socket), self._lottery, logging.getLogger(__name__))
                 self.client.start() 
 
         logging.info("action: graceful_shutdown | result: success")
