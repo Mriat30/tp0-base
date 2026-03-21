@@ -51,8 +51,9 @@ class ClientHandler:
             self._logger.info(f'action: apuesta_recibida | result: success | ip: {addr[0]} | cantidad: {len(bets)}')
         elif action == OpCode.WAITING_FOR_WINNERS:
             agency_id = self._client_id
+            self._lottery.notify_done(agency_id)
             winners = self._lottery.get_winners(agency_id)
-            self._logger.info(f"action: waiting_for_winners | result: success")
+            self._logger.info(f"action: consulta_ganadores | result: success | cant_ganadores: {len(winners)}")
             self._protocol.send_winners(winners)
             self._should_be_running = False
         else:
