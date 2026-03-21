@@ -9,7 +9,7 @@ import datetime
 class TestLottery(unittest.TestCase):
     def setUp(self):
         self.mock_logger = MagicMock()
-        self.lottery = Lottery(total_agencys=2, logger=self.mock_logger)
+        self.lottery = Lottery(total_agencies=2, logger=self.mock_logger)
 
     def tearDown(self):
         pass
