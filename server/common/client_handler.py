@@ -1,8 +1,6 @@
-from .protocol import ServerProtocol
 from .protocol import OpCode
 from model.bet import store_bets
 import logging
-import socket
 
 class ClientHandler:
     def __init__(self, protocol, lottery, logger=None):
