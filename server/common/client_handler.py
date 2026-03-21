@@ -54,7 +54,6 @@ class ClientHandler:
             agency_id = self._client_id
             self._lottery.notify_done(agency_id)
             winners = self._lottery.get_winners(agency_id)
-            self._logger.info(f"action: consulta_ganadores | result: success | cant_ganadores: {len(winners)}")
             self._protocol.send_winners(winners)
             self._should_be_running = False
         else:
