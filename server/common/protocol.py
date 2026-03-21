@@ -2,14 +2,16 @@ import socket
 from common.utils import OpCode
 from model.bet import Bet
 from model.lottery_winner import LotteryWinner
+import logging
 
 class ServerProtocol:
     _CHAR_SIZE = 1
     _INT_SIZE = 4
 
-    def __init__(self, socket):
+    def __init__(self, socket, logger=None):
         self._socket = socket
         self._client_id = None
+        self._logger = logger or logging.getLogger(__name__)
 
     def read_client_id(self):
         client_id = self._read_int()

@@ -35,7 +35,8 @@ class Server:
         while self._should_be_running:
             client_socket = self.__accept_new_connection()
             if client_socket:
-                self.client = ClientHandler(ServerProtocol(client_socket), self._lottery, logging.getLogger(__name__))
+                protocol = ServerProtocol(client_socket, logging.getLogger(__name__))
+                self.client = ClientHandler(protocol, self._lottery, logging.getLogger(__name__))
                 self.client.start() 
 
         logging.info("action: graceful_shutdown | result: success")
