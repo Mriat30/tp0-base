@@ -3,9 +3,35 @@ package protocol
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
+	"io"
 	"testing"
 	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/src/model"
 )
+
+type writeOnlyReadWriter struct {
+	writer io.Writer
+}
+
+func (w *writeOnlyReadWriter) Write(p []byte) (int, error) {
+	return w.writer.Write(p)
+}
+
+func (w *writeOnlyReadWriter) Read(_ []byte) (int, error) {
+	return 0, io.EOF
+}
+
+type zeroWriteWriter struct{}
+
+func (w *zeroWriteWriter) Write(_ []byte) (int, error) {
+	return 0, nil
+}
+
+type failWriter struct{}
+
+func (w *failWriter) Write(_ []byte) (int, error) {
+	return 0, errors.New("write failed")
+}
 
 func checkOpCode(t *testing.T, r *bytes.Reader, want OpCode) {
 	var got OpCode
@@ -78,7 +104,10 @@ func TestProtocol_SendClientId(t *testing.T) {
 	proto := NewProtocol(buf)
 	clientID := ClientIDType(12345)
 
-	proto.SendClientId(clientID)
+	err := proto.SendClientId(clientID)
+	if err != nil {
+		t.Fatalf("got error %v, want nil", err)
+	}
 	r := bytes.NewReader(buf.Bytes())
 
 	checkOpCode(t, r, OpCodeClientID)
@@ -97,7 +126,10 @@ func TestProtocol_SendBet(t *testing.T) {
 		Number:    7574,
 	}
 
-	proto.SendBet(bet)
+	err := proto.SendBet(bet)
+	if err != nil {
+		t.Fatalf("got error %v, want nil", err)
+	}
 	r := bytes.NewReader(buf.Bytes())
 
 	checkOpCode(t, r, OpCodeRegisterSingleBet)
@@ -146,7 +178,10 @@ func TestProtocol_SendBatchOfBets_Success(t *testing.T) {
 		},
 	}
 
-	proto.SendBatchOfBets(bets)
+	err := proto.SendBatchOfBets(bets)
+	if err != nil {
+		t.Fatalf("got error %v, want nil", err)
+	}
 	r := bytes.NewReader(buf.Bytes())
 	checkOpCode(t, r, OpCodeRegisterBatchBets)
 	checkUint32(t, r, 2)
@@ -185,4 +220,35 @@ func TestProtocol_SendBatchOfBets_WithLimit(t *testing.T) {
     if err == nil {
         t.Fatal("got nil, want error")
     }
+}
+
+func TestProtocol_SendBatchOfBets_FailsOnShortWrite(t *testing.T) {
+	rw := &writeOnlyReadWriter{writer: &zeroWriteWriter{}}
+	proto := NewProtocol(rw)
+
+	bets := []model.Bet{
+		{
+			Agency:    1,
+			FirstName: "Juan",
+			LastName:  "Perez",
+			Document:  123,
+			Birthdate: "2000-01-01",
+			Number:    7574,
+		},
+	}
+
+	err := proto.SendBatchOfBets(bets)
+	if !errors.Is(err, io.ErrShortWrite) {
+		t.Fatalf("got %v, want %v", err, io.ErrShortWrite)
+	}
+}
+
+func TestProtocol_SendClientId_FailsOnWriteError(t *testing.T) {
+	rw := &writeOnlyReadWriter{writer: &failWriter{}}
+	proto := NewProtocol(rw)
+
+	err := proto.SendClientId(123)
+	if err == nil {
+		t.Fatal("got nil, want error")
+	}
 }

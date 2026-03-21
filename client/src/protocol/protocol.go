@@ -54,19 +54,21 @@ func NewProtocol(rw io.ReadWriter, opts ...Option) *Protocol {
 }
 
 func (p *Protocol) SendClientId(clientId ClientIDType) error {
-	binary.Write(p.rw, binary.BigEndian, OpCodeClientID)
-	binary.Write(p.rw, binary.BigEndian, clientId)
+	if err := binary.Write(p.rw, binary.BigEndian, OpCodeClientID); err != nil {
+		return err
+	}
+	if err := binary.Write(p.rw, binary.BigEndian, clientId); err != nil {
+		return err
+	}
 	return nil
 }
 
 func (p *Protocol) SendAckWinners() error {
-	binary.Write(p.rw, binary.BigEndian, OpCodeAckWinners)
-	return nil
+	return binary.Write(p.rw, binary.BigEndian, OpCodeAckWinners)
 }
 
 func (p *Protocol) SendWaitingForWinners() error {
-	binary.Write(p.rw, binary.BigEndian, OpCodeWaitingForWinners)
-	return nil
+	return binary.Write(p.rw, binary.BigEndian, OpCodeWaitingForWinners)
 }
 
 func (p *Protocol) ReadWinners() ([]model.Winner, error) {
@@ -107,34 +109,51 @@ func (p *Protocol) ReadWinners() ([]model.Winner, error) {
 }
 
 func (p *Protocol) SendBet(bet model.Bet) error {
-	binary.Write(p.rw, binary.BigEndian, OpCodeRegisterSingleBet)
-	p.writeBet(p.rw, bet)
-	return nil
+	if err := binary.Write(p.rw, binary.BigEndian, OpCodeRegisterSingleBet); err != nil {
+		return err
+	}
+	return p.writeBet(p.rw, bet)
 }
 
 func (p *Protocol) SendBatchOfBets(bets []model.Bet) error {
     buf := new(bytes.Buffer)
 
-	binary.Write(buf, binary.BigEndian, OpCodeRegisterBatchBets)
-	binary.Write(buf, binary.BigEndian, uint32(len(bets)))
+	if err := binary.Write(buf, binary.BigEndian, OpCodeRegisterBatchBets); err != nil {
+		return err
+	}
+	if err := binary.Write(buf, binary.BigEndian, uint32(len(bets))); err != nil {
+		return err
+	}
 	for _, bet := range bets {
-		p.writeBet(buf, bet)
+		if err := p.writeBet(buf, bet); err != nil {
+			return err
+		}
 	}
 
 	if buf.Len() > p.maxBatchSize {
 		return fmt.Errorf("batch too large: %d bytes (max %d)", buf.Len(), p.maxBatchSize)
 	}
 
-	_, err := p.rw.Write(buf.Bytes())
-	return err
+	return writeAll(p.rw, buf.Bytes())
 }
 
-func (p *Protocol) writeBet(w io.Writer, bet model.Bet) {
-	p.writeString(w, bet.FirstName)
-	p.writeString(w, bet.LastName)
-	binary.Write(w, binary.BigEndian, DocumentType(bet.Document))
-	p.writeString(w, bet.Birthdate)
-	binary.Write(w, binary.BigEndian, BetNumberType(bet.Number))
+func (p *Protocol) writeBet(w io.Writer, bet model.Bet) error {
+	if err := p.writeString(w, bet.FirstName); err != nil {
+		return err
+	}
+	if err := p.writeString(w, bet.LastName); err != nil {
+		return err
+	}
+	if err := binary.Write(w, binary.BigEndian, DocumentType(bet.Document)); err != nil {
+		return err
+	}
+	if err := p.writeString(w, bet.Birthdate); err != nil {
+		return err
+	}
+	if err := binary.Write(w, binary.BigEndian, BetNumberType(bet.Number)); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (p *Protocol) ReadBetRegistered() error {
@@ -149,7 +168,24 @@ func (p *Protocol) ReadBetRegistered() error {
 	return nil
 }
 
-func (p *Protocol) writeString(w io.Writer, s string) {
-	binary.Write(w, binary.BigEndian, uint8(len(s)))
-	w.Write([]byte(s))
+func (p *Protocol) writeString(w io.Writer, s string) error {
+	if err := binary.Write(w, binary.BigEndian, uint8(len(s))); err != nil {
+		return err
+	}
+	return writeAll(w, []byte(s))
+}
+
+func writeAll(w io.Writer, data []byte) error {
+	written := 0
+	for written < len(data) {
+		n, err := w.Write(data[written:])
+		if err != nil {
+			return err
+		}
+		if n == 0 {
+			return io.ErrShortWrite
+		}
+		written += n
+	}
+	return nil
 }
