@@ -4,7 +4,7 @@ from model.bet import has_won
 from model.lottery_winner import LotteryWinner
 
 class Lottery:
-    def __init__(self, total_agencies, logger, storage):
+    def __init__(self, total_agencies, storage, logger):
         self._agencies_done = set()
         self._total_agencies = total_agencies
         self._logger = logger
