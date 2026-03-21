@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from common.client_handler import ClientHandler
 from common.protocol import OpCode
 from model.bet import Bet
@@ -40,23 +40,24 @@ class TestClientHandler(unittest.TestCase):
         self.proto.send_bet_registered.assert_called_once()
         self.proto.close.assert_called_once()
 
-    def test_handle_batch_fails_if_storage_fails(self):
+    def test_handle_batch_bets_success(self):
         bets = [
             Bet(1, "Juan", "Perez", "12345678", "1990-01-01", "7574"),
-            Bet(1, "Maria", "Gomez", "87654321", "1995-05-05", "1234")
+            Bet(1, "Maria", "Gomez", "87654321", "1995-05-05", "1234"),
         ]
-        self.mock_storage.store.side_effect = Exception("Storage error")
         self._prepare_proto(OpCode.REGISTER_BATCH_OF_BETS, bets, is_batch=True)
-        
+
         self.handler.start()
-        
+
         self.mock_storage.store.assert_called_once_with(bets)
-        self.proto.send_bet_registered.assert_not_called()
-        self.assertTrue(any("result: fail" in str(c) for c in self.mock_log.mock_calls))
+        self.proto.send_bet_registered.assert_called_once()
         self.proto.close.assert_called_once()
 
-    def test_handle_batch_fails_if_storage_fails(self):
-        bets = [Bet(1, "Juan", "Perez", "12345678", "1990-01-01", "7574")]
+    def test_handle_batch_bets_fail_if_storage_fails(self):
+        bets = [
+            Bet(1, "Juan", "Perez", "12345678", "1990-01-01", "7574"),
+            Bet(1, "Maria", "Gomez", "87654321", "1995-05-05", "1234"),
+        ]
         self.mock_storage.store.side_effect = OSError("Storage error")
         self._prepare_proto(OpCode.REGISTER_BATCH_OF_BETS, bets, is_batch=True)
 
