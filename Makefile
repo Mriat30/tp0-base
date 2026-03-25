@@ -61,6 +61,15 @@ test-client:
 		golang:1.17 /bin/bash -c "go test -v -mod=vendor ./... | sed ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''"
 .PHONY: test-client
 
+test-healthcheck: docker-image
+	./generar-compose.sh docker-compose-dev.yaml 3
+	docker compose -f docker-compose-dev.yaml up server -d
+	@echo "Esperando healthcheck..."
+	@sleep 10
+	docker inspect server | python3 -m json.tool | grep -A 10 '"Health"'
+	docker compose -f docker-compose-dev.yaml down
+.PHONY: test-healthcheck
+
 clean-python:
 	rm -rf $(VENV)
 	find . -type d -name "__pycache__" -exec rm -rf {} +
