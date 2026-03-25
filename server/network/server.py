@@ -2,9 +2,9 @@ import socket
 import logging
 import signal
 from network.client_handler import ClientHandler
-from common.lottery import Lottery
+from domain.lottery import Lottery
 from network.protocol import ServerProtocol
-from common.bet_storage import BetStorage
+from domain.bet_storage import BetStorage
 import threading
 
 class Server:
