@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from configparser import ConfigParser
-from server.network.server import Server
+from network.server import Server
 import logging
 import os
 

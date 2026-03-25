@@ -1,7 +1,7 @@
 import socket
-from server.common.utils import OpCode
-from server.model.bet import Bet
-from server.model.lottery_winner import LotteryWinner
+from common.utils import OpCode
+from model.bet import Bet
+from model.lottery_winner import LotteryWinner
 import logging
 
 class ServerProtocol:

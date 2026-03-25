@@ -1,4 +1,4 @@
-from server.model.bet import *
+from model.bet import *
 import os
 import unittest
 

@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import MagicMock
-from server.network.client_handler import ClientHandler
-from server.network.protocol import OpCode
-from server.model.bet import Bet
+from network.client_handler import ClientHandler
+from network.protocol import OpCode
+from model.bet import Bet
 
 class TestClientHandler(unittest.TestCase):
     def setUp(self):
