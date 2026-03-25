@@ -62,11 +62,21 @@ test-client:
 .PHONY: test-client
 
 test-healthcheck: docker-image
+	chmod +x generar-compose.sh
 	./generar-compose.sh docker-compose-dev.yaml 3
 	docker compose -f docker-compose-dev.yaml up server -d
 	@echo "Esperando healthcheck..."
-	@sleep 10
-	docker inspect server | python3 -m json.tool | grep -A 10 '"Health"'
+	@until [ "$$(docker inspect --format='{{.State.Health.Status}}' server)" = "healthy" ]; do \
+		STATUS=$$(docker inspect --format='{{.State.Health.Status}}' server); \
+		if [ "$$STATUS" = "unhealthy" ]; then \
+			echo "action: healthcheck | result: fail"; \
+			docker compose -f docker-compose-dev.yaml down; \
+			exit 1; \
+		fi; \
+		echo "Status: $$STATUS, esperando..."; \
+		sleep 2; \
+	done
+	@echo "action: healthcheck | result: success"
 	docker compose -f docker-compose-dev.yaml down
 .PHONY: test-healthcheck
 
