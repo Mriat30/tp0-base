@@ -1,10 +1,10 @@
 import socket
 import logging
 import signal
-from common.client_handler import ClientHandler
-from common.lottery import Lottery
-from common.protocol import ServerProtocol
-from common.bet_storage import BetStorage
+from server.network.client_handler import ClientHandler
+from server.common.lottery import Lottery
+from server.network.protocol import ServerProtocol
+from server.common.bet_storage import BetStorage
 import threading
 
 class Server:

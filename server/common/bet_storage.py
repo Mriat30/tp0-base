@@ -1,5 +1,5 @@
 from threading import Lock
-from model.bet import store_bets, load_bets
+from server.model.bet import store_bets, load_bets
 
 class BetStorage:
     def __init__(self):

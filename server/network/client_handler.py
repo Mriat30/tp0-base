@@ -1,5 +1,4 @@
 from .protocol import OpCode
-from model.bet import store_bets
 import logging
 
 class ClientHandler:

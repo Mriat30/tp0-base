@@ -1,7 +1,7 @@
 # common/lottery.py
 from threading import Event, Lock
-from model.bet import has_won
-from model.lottery_winner import LotteryWinner
+from server.model.bet import has_won
+from server.model.lottery_winner import LotteryWinner
 
 class Lottery:
     def __init__(self, total_agencies, storage, logger):

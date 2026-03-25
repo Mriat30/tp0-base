@@ -1,6 +1,6 @@
-from common.protocol import ServerProtocol
-from common.utils import OpCode
-from model.lottery_winner import LotteryWinner
+from server.network.protocol import ServerProtocol
+from server.common.utils import OpCode
+from server.model.lottery_winner import LotteryWinner
 import unittest
 from unittest.mock import MagicMock
 import datetime

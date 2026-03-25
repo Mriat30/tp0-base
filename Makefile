@@ -51,7 +51,7 @@ server-deps: $(VENV)/bin/activate
 .PHONY: server-deps
 
 test-server: server-deps
-	PYTHONPATH=$(PWD)/$(SERVER_DIR) ./$(VENV)/bin/pytest $(SERVER_DIR)/tests
+	PYTHONPATH=$(PWD) ./$(VENV)/bin/pytest $(SERVER_DIR)/tests
 .PHONY: test-server
 
 test-client:
