@@ -21,36 +21,36 @@ class TestLottery(unittest.TestCase):
         self.mock_storage.load.return_value = bets
         mock_has_won.side_effect = lambda bet: bet.number == 7574
 
-        results = {}
+        winners_agency_1 = []
+        winners_agency_2 = []
 
-        def agency_task(agency_id):
-            winners = self.lottery.notify_done(agency_id)
-            results[agency_id] = winners
+        def agency_1():
+            self.lottery.notify_done(1)
+            winners_agency_1.extend(self.lottery.get_winners(1))
 
-        t1 = threading.Thread(target=agency_task, args=(1,))
-        t2 = threading.Thread(target=agency_task, args=(2,))
-        
+        def agency_2():
+            self.lottery.notify_done(2)
+            winners_agency_2.extend(self.lottery.get_winners(2))
+
+        t1 = threading.Thread(target=agency_1)
+        t2 = threading.Thread(target=agency_2)
         t1.start()
         t2.start()
-        
         t1.join(timeout=5.0)
         t2.join(timeout=5.0)
 
-        self.assertFalse(t1.is_alive())
-        self.assertFalse(t2.is_alive())
+        self.assertFalse(t1.is_alive(), "agency_1 thread should have finished")
+        self.assertFalse(t2.is_alive(), "agency_2 thread should have finished")
 
-        winners_agency_1 = results[1]
         self.assertEqual(len(winners_agency_1), 1)
         self.assertIsInstance(winners_agency_1[0], LotteryWinner)
         self.assertEqual(winners_agency_1[0].document, "12345678")
 
-        winners_agency_2 = results[2]
         self.assertEqual(len(winners_agency_2), 1)
         self.assertIsInstance(winners_agency_2[0], LotteryWinner)
         self.assertEqual(winners_agency_2[0].document, "11111111")
 
-        log_calls = [call.args[0] for call in self.mock_logger.info.call_args_list]
-        self.assertTrue(any("sorteo" in msg for msg in log_calls))
+        self.assertTrue(any("sorteo" in str(call) for call in self.mock_logger.info.call_args_list))
 
 if __name__ == '__main__':
     unittest.main()

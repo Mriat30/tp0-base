@@ -49,7 +49,8 @@ class ClientHandler:
             self._process_store_bets(bets, addr)
         elif action == OpCode.WAITING_FOR_WINNERS:
             agency_id = self._client_id
-            winners = self._lottery.notify_done(agency_id)
+            self._lottery.notify_done(agency_id)
+            winners = self._lottery.get_winners(agency_id)
             self._protocol.send_winners(winners)
             self._should_be_running = False
         else:
