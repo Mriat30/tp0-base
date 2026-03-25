@@ -27,11 +27,14 @@ def main():
         "    networks:",
         "      - testing_net",
         "    healthcheck:",
-            "      test: ['CMD', 'healthcheck.sh']",
-            "      interval: 2s",
-            "      timeout: 5s",
-            "      retries: 5",
-            "      start_period: 2s",
+        "      test:",
+        "        - CMD",
+        "        - sh",
+        "        - /healthcheck.sh",
+        "      interval: 2s",
+        "      timeout: 5s",
+        "      retries: 5",
+        "      start_period: 2s",
         ""
     ]
 

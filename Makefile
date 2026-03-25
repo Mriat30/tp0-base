@@ -61,6 +61,25 @@ test-client:
 		golang:1.17 /bin/bash -c "go test -v -mod=vendor ./... | sed ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''"
 .PHONY: test-client
 
+test-healthcheck: docker-image
+	chmod +x generar-compose.sh
+	./generar-compose.sh docker-compose-dev.yaml 3
+	docker compose -f docker-compose-dev.yaml up server -d
+	@echo "Esperando healthcheck..."
+	@until [ "$$(docker inspect --format='{{.State.Health.Status}}' server)" = "healthy" ]; do \
+		STATUS=$$(docker inspect --format='{{.State.Health.Status}}' server); \
+		if [ "$$STATUS" = "unhealthy" ]; then \
+			echo "action: healthcheck | result: fail"; \
+			docker compose -f docker-compose-dev.yaml down; \
+			exit 1; \
+		fi; \
+		echo "Status: $$STATUS, esperando..."; \
+		sleep 2; \
+	done
+	@echo "action: healthcheck | result: success"
+	docker compose -f docker-compose-dev.yaml down
+.PHONY: test-healthcheck
+
 clean-python:
 	rm -rf $(VENV)
 	find . -type d -name "__pycache__" -exec rm -rf {} +
