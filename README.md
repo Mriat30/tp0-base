@@ -181,6 +181,29 @@ En caso de que la validación sea exitosa imprimir: `action: test_echo_server | 
 
 El script deberá ubicarse en la raíz del proyecto. Netcat no debe ser instalado en la máquina _host_ y no se pueden exponer puertos del servidor para realizar la comunicación (hint: `docker network`). `
 
+#### Desarrollo realizado
+
+Para este ejercicio se implementó el script `validar-echo-server.sh` en la raíz del proyecto, utilizando un contenedor temporal con `busybox` para ejecutar `nc` (netcat) dentro de la misma red de Docker que el servidor, cumpliendo así con la restricción de no instalar netcat en el _host_ ni exponer puertos.
+
+El uso típico es:
+
+```bash
+make docker-compose-up
+./validar-echo-server.sh
+```
+
+El script:
+
+- Asume que el servidor está accesible en el servicio `server` por el puerto `12345`, dentro de la red `tp0_testing_net` definida en el `docker-compose-dev.yaml`.
+- Envía un mensaje de prueba (`"Mensaje de test"`) al servidor mediante:
+	- `docker run -i --rm --network tp0_testing_net busybox nc -w 2 server 12345`
+	- De este modo, la comunicación se hace enteramente dentro de la red de Docker, sin exponer puertos al exterior.
+- Lee la respuesta, limpia caracteres de retorno de carro (`\r`) y compara texto enviado vs. recibido.
+	- Si coinciden exactamente, imprime: `action: test_echo_server | result: success`.
+	- En caso contrario, imprime: `action: test_echo_server | result: fail`.
+
+De esta forma, `validar-echo-server.sh` permite verificar rápidamente desde el host el comportamiento de _echo_ del servidor ya desplegado en Docker, reutilizando la misma red del compose y sin dependencias extra en la máquina local.
+
 
 <a id="ejercicio-4"></a>
 ### Ejercicio N°4:
