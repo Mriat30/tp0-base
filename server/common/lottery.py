@@ -13,7 +13,6 @@ class Lottery:
 
     def notify_done(self, agency_id):
         try:
-            self._logger.info(f"action: wait_for_lottery | agency: {agency_id}")
             self._barrier.wait()
             return [LotteryWinner(doc) for doc in self._winners.get(agency_id, [])]
         except BrokenBarrierError:
@@ -21,7 +20,6 @@ class Lottery:
             return []
 
     def _run_lottery(self):
-        self._logger.info("action: sorteo | result: in_progress")
         all_bets = self._storage.load()
         
         for bet in all_bets:
