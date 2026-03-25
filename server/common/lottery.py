@@ -1,35 +1,31 @@
-# common/lottery.py
-from threading import Event, Lock
+from threading import Barrier, BrokenBarrierError
+from collections import defaultdict
 from model.bet import has_won
 from model.lottery_winner import LotteryWinner
 
 class Lottery:
     def __init__(self, total_agencies, storage, logger):
-        self._agencies_done = set()
         self._total_agencies = total_agencies
-        self._logger = logger
         self._storage = storage
-        self._lottery_ready = Event()
-        self._lock = Lock()
-        self._winners = {}
+        self._logger = logger
+        self._winners = defaultdict(set)
+        self._barrier = Barrier(total_agencies, action=self._run_lottery)
 
     def notify_done(self, agency_id):
-        with self._lock:
-            self._agencies_done.add(agency_id)
-            if len(self._agencies_done) == self._total_agencies:
-                self._run_lottery()
-
-    def get_winners(self, agency_id):
-        self._lottery_ready.wait()
-        return [
-            LotteryWinner(doc)
-            for doc in self._winners.get(agency_id, [])
-        ]
+        try:
+            self._logger.info(f"action: wait_for_lottery | agency: {agency_id}")
+            self._barrier.wait()
+            return [LotteryWinner(doc) for doc in self._winners.get(agency_id, [])]
+        except BrokenBarrierError:
+            self._logger.error(f"La barrera se rompió mientras esperaba a la agencia {agency_id}")
+            return []
 
     def _run_lottery(self):
+        self._logger.info("action: sorteo | result: in_progress")
         all_bets = self._storage.load()
+        
         for bet in all_bets:
             if has_won(bet):
-                self._winners.setdefault(bet.agency, []).append(bet.document)
+                self._winners[bet.agency].add(bet.document)
+        
         self._logger.info("action: sorteo | result: success")
-        self._lottery_ready.set()
