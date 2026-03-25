@@ -52,7 +52,8 @@ def main():
         content.append(f"    networks:")
         content.append(f"      - testing_net")
         content.append(f"    depends_on:")
-        content.append(f"      - server")
+        content.append(f"      server:")
+        content.append(f"        condition: service_healthy")
         content.append("")
 
     content.extend([
