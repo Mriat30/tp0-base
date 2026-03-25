@@ -102,7 +102,7 @@ En esta primera parte del trabajo práctico se plantean una serie de ejercicios 
 
 <a id="ejercicio-1"></a>
 ### Ejercicio N°1:
-Definir un script de bash `generar-compose.sh` que permita crear una definición de Docker Compose con una canombre_ntidad configurable de clientes.  El nombre de los cojemplo de uso:ntainers deberá seguir el formato propuesto: client1, client2, client3, etc. 
+Definir un script de bash `generar-compose.sh` que permita crear una definición de Docker Compose con una cantidad configurable de clientes.  El nombre de los containers deberá seguir el formato propuesto: client1, client2, client3, etc. 
 
 El script deberá ubicarse en la raíz del proyecto y recibirá por parámetro el nombre del archivo de salida y la cantidad de clientes esperados:
 
@@ -148,6 +148,29 @@ Ejemplo de uso:
 <a id="ejercicio-2"></a>
 ### Ejercicio N°2:
 Modificar el cliente y el servidor para lograr que realizar cambios en el archivo de configuración no requiera reconstruír las imágenes de Docker para que los mismos sean efectivos. La configuración a través del archivo correspondiente (`config.ini` y `config.yaml`, dependiendo de la aplicación) debe ser inyectada en el container y persistida por fuera de la imagen (hint: `docker volumes`).
+
+#### Desarrollo realizado
+
+Para este ejercicio se reutilizó el mismo flujo `generar-compose.sh` → `mi-generador.py`, agregando en `mi-generador.py` la lógica necesaria para inyectar los archivos de configuración en los contenedores mediante volúmenes.
+
+En particular, el generador ahora:
+
+- Define en el servicio del servidor un volumen que mapea el archivo de configuración local `server/config.ini` dentro del contenedor (por ejemplo, en `/config.ini`), de forma de poder modificar la configuración del servidor sin reconstruir la imagen.
+- Define en cada cliente un volumen que mapea `client/config.yaml` dentro del contenedor (por ejemplo, en `/config.yaml`), permitiendo cambiar la configuración del cliente desde el host y reutilizar la misma imagen para todos los ejercicios.
+ - Elimina variables de entorno hardcodeadas relacionadas con configuración (por ejemplo `LOGGING_LEVEL`, `CLI_LOG_LEVEL`), de modo que esos valores pasen a ser tomados desde los archivos de configuración montados, y no queden “fijos” en el `docker-compose` generado.
+
+El uso del script se mantiene igual que en el Ejercicio 1:
+
+```bash
+./generar-compose.sh docker-compose-dev.yaml 5
+```
+
+La diferencia es que ahora el archivo `docker-compose-dev.yaml` generado ya incluye las secciones `volumes` y los mapeos necesarios para `config.ini` y `config.yaml`, cumpliendo con el requisito de que los cambios de configuración se apliquen solo modificando archivos en el host, sin necesidad de volver a hacer `docker build`.
+
+Complementariamente, se actualizó el target `docker-compose-up` del `Makefile` para quitar el flag `--build` de `docker compose up`. De esta forma:
+
+- La reconstrucción de imágenes queda explícitamente acotada al target `docker-image`.
+- Al ejecutar `make docker-compose-up` se reutilizan las imágenes existentes y solo se levantan los contenedores, respetando los cambios de configuración montados por volumen sin forzar un rebuild innecesario.
 
 
 <a id="ejercicio-3"></a>
