@@ -26,6 +26,12 @@ def main():
         f"      - N_CLIENTS={num_clients}",
         "    networks:",
         "      - testing_net",
+        "    healthcheck:",
+            "      test: ['CMD', 'healthcheck.sh']",
+            "      interval: 2s",
+            "      timeout: 5s",
+            "      retries: 5",
+            "      start_period: 2s",
         ""
     ]
 
