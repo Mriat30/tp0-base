@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import MagicMock, patch
-from common.lottery import Lottery
+from domain.lottery import Lottery
 from model.bet import Bet
 from model.lottery_winner import LotteryWinner
 import threading
@@ -11,7 +11,7 @@ class TestLottery(unittest.TestCase):
         self.mock_storage = MagicMock()
         self.lottery = Lottery(total_agencies=2, storage=self.mock_storage, logger=self.mock_logger)
 
-    @patch('common.lottery.has_won')
+    @patch('domain.lottery.has_won')
     def test_notify_done_returns_winners_when_all_agencies_done(self, mock_has_won):
         bets = [
             Bet(1, "Juan", "Perez", "12345678", "1990-01-01", 7574),
