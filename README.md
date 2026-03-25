@@ -102,7 +102,7 @@ En esta primera parte del trabajo práctico se plantean una serie de ejercicios 
 
 <a id="ejercicio-1"></a>
 ### Ejercicio N°1:
-Definir un script de bash `generar-compose.sh` que permita crear una definición de Docker Compose con una cantidad configurable de clientes.  El nombre de los containers deberá seguir el formato propuesto: client1, client2, client3, etc. 
+Definir un script de bash `generar-compose.sh` que permita crear una definición de Docker Compose con una canombre_ntidad configurable de clientes.  El nombre de los cojemplo de uso:ntainers deberá seguir el formato propuesto: client1, client2, client3, etc. 
 
 El script deberá ubicarse en la raíz del proyecto y recibirá por parámetro el nombre del archivo de salida y la cantidad de clientes esperados:
 
@@ -118,6 +118,32 @@ python3 mi-generador.py $1 $2
 ```
 
 En el archivo de Docker Compose de salida se pueden definir volúmenes, variables de entorno y redes con libertad, pero recordar actualizar este script cuando se modifiquen tales definiciones en los sucesivos ejercicios.
+
+#### Desarrollo realizado
+
+Para este ejercicio se implementó la solución en dos componentes:
+
+- Un script de bash `generar-compose.sh`, ubicado en la raíz del proyecto, que actúa como punto de entrada.
+- Un script de Python `mi-generador.py`, también en la raíz, que se encarga de generar efectivamente el archivo de Docker Compose.
+
+El uso de `generar-compose.sh` es:
+
+```bash
+./generar-compose.sh <nombre_archivo_salida> <cantidad_clientes>
+```
+
+Ejemplo de uso:
+
+```bash
+./generar-compose.sh docker-compose-dev.yaml 5
+```
+
+`generar-compose.sh` simplemente recibe los parámetros, muestra por pantalla el nombre del archivo de salida y la cantidad de clientes, y luego delega la lógica en `mi-generador.py`, pasándole esos mismos argumentos. 
+
+`mi-generador.py` se encarga de:
+- Crear los servicios `client1`, `client2`, ..., `clientN` según la cantidad indicada.
+- Mantener la estructura base del compose (servicio `server`, redes, volúmenes, etc.).
+- Sobrescribir el archivo de salida si ya existe, de modo que correr nuevamente el script regenere el compose acorde a la nueva cantidad de clientes.
 
 <a id="ejercicio-2"></a>
 ### Ejercicio N°2:
