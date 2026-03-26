@@ -1,35 +1,31 @@
-from threading import Thread, Event
-from queue import Queue
+from threading import Event, Lock
 from model.bet import has_won
 from model.lottery_winner import LotteryWinner
 
 class Lottery:
     def __init__(self, total_agencies, storage, logger):
+        self._agencies_done = set()
         self._total_agencies = total_agencies
         self._logger = logger
         self._storage = storage
         self._lottery_ready = Event()
+        self._lock = Lock()
         self._winners = {}
-        self._queue = Queue()
-        self._thread = Thread(target=self._worker)
-        self._thread.start()
 
     def notify_done(self, agency_id):
-        self._queue.put(agency_id)
+        with self._lock:
+            self._agencies_done.add(agency_id)
+            if len(self._agencies_done) == self._total_agencies:
+                self._run_lottery()
 
     def get_winners(self, agency_id):
         self._lottery_ready.wait()
-        return [LotteryWinner(doc) for doc in self._winners.get(agency_id, [])]
-
-    def _worker(self):
-        agencies_done = set()
-        while len(agencies_done) < self._total_agencies:
-            agency_id = self._queue.get()
-            agencies_done.add(agency_id)
-        self._run_lottery()
+        return [
+            LotteryWinner(doc)
+            for doc in self._winners.get(agency_id, [])
+        ]
 
     def _run_lottery(self):
-        self._storage.flush()
         all_bets = self._storage.load()
         for bet in all_bets:
             if has_won(bet):
