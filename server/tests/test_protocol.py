@@ -1,5 +1,5 @@
 from common.protocol import ServerProtocol
-from common.utils import ActionType
+from common.utils import OpCode
 from model.bet import Bet
 import unittest
 from unittest.mock import MagicMock
@@ -14,7 +14,7 @@ class TestProtocol(unittest.TestCase):
         
         action = protocol.read_action()
         
-        self.assertEqual(action, ActionType.REGISTER_SINGLE_BET)
+        self.assertEqual(action, OpCode.REGISTER_SINGLE_BET)
 
     def test_protocol_read_action_client_disconnection(self):
         socket = MagicMock()

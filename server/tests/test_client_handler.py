@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
 from common.client_handler import ClientHandler
-from common.protocol import ActionType
+from common.utils import OpCode
 from model.bet import Bet, STORAGE_FILEPATH, store_bets
 import os
 
@@ -18,7 +18,7 @@ class TestClientHandler(unittest.TestCase):
         expected_bet = Bet("1", "Juan", "Perez", "12345678", "1990-01-01", "7574")
         handler = ClientHandler(mock_socket)
         handler._protocol.read_action = MagicMock(side_effect=[
-            ActionType.REGISTER_SINGLE_BET, 
+            OpCode.REGISTER_SINGLE_BET, 
             EOFError
         ])
         handler._protocol.read_bet = MagicMock(return_value=expected_bet)

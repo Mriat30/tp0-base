@@ -1,6 +1,6 @@
 from enum import Enum
 
-class ActionType(Enum):
+class OpCode(Enum):
     REGISTER_SINGLE_BET = 0x01
 
     @classmethod

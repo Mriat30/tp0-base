@@ -7,8 +7,10 @@ import (
     "github.com/7574-sistemas-distribuidos/docker-compose-init/client/common/model"
 )
 
+type OpCode uint8
+
 const (
-    RegisterSingleBet uint8 = 1
+    RegisterSingleBet OpCode = 1
 )
 
 type Protocol struct {
@@ -20,7 +22,7 @@ func NewProtocol(rw io.ReadWriter) *Protocol {
 }
 
 func (p *Protocol) SendBet(bet model.Bet) error {
-    binary.Write(p.rw, binary.BigEndian, uint8(1))
+    binary.Write(p.rw, binary.BigEndian, RegisterSingleBet)
     binary.Write(p.rw, binary.BigEndian, bet.Agency)
     p.writeString(bet.FirstName)
     p.writeString(bet.LastName)

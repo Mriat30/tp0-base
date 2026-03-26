@@ -1,5 +1,5 @@
 from .protocol import ServerProtocol
-from .utils import ActionType
+from .utils import OpCode
 from model.bet import store_bets
 import logging
 import socket
@@ -24,7 +24,7 @@ class ClientHandler:
             while self._should_be_running:
                 action = self._protocol.read_action()
                 
-                if action == ActionType.REGISTER_SINGLE_BET:
+                if action == OpCode.REGISTER_SINGLE_BET:
                     bet = self._protocol.read_bet()
                     store_bets([bet])
                     self._protocol.send_bet_registered()

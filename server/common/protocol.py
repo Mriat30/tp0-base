@@ -1,5 +1,5 @@
 import socket
-from common.utils import ActionType
+from common.utils import OpCode
 from model.bet import Bet
 
 class ServerProtocol:
@@ -13,7 +13,7 @@ class ServerProtocol:
     def read_action(self):
         action = self._socket.recv(self._CHAR_SIZE)
         if not action: raise EOFError("Socket cerrado por el cliente")
-        return ActionType.from_bytes(action)
+        return OpCode.from_bytes(action)
 
     def read_bet(self):
         agency = self._read_int()
