@@ -393,6 +393,48 @@ La cantidad máxima de apuestas dentro de cada _batch_ debe ser configurable des
 
 Por su parte, el servidor deberá responder con éxito solamente si todas las apuestas del _batch_ fueron procesadas correctamente.
 
+#### Desarrollo realizado
+
+En este ejercicio se introdujo el concepto de **batches** para optimizar la transmisión de apuestas, permitiendo enviar múltiples apuestas en una sola consulta TCP, reduciendo la latencia y mejorando la eficiencia de red.
+
+##### Limitación de tamaño de paquetes
+
+Se impuso una limitación máxima de **8 kB** por paquete para evitar fragmentación excesiva y optimizar el uso de buffers. Esta restricción afecta directamente la cantidad máxima de apuestas por batch, ya que cada apuesta tiene un tamaño variable debido a los campos de texto (nombres y fecha de nacimiento).
+
+- **Campos fijos por apuesta:** `agency` (4 bytes, uint32), `document` (4 bytes, uint32), `number` (4 bytes, uint32) → 12 bytes total.
+- **Campos dinámicos:** `first_name`, `last_name`, `birthdate` (cada uno: 1 byte para longitud + N bytes UTF-8).
+- **Estimación conservadora:** Asumiendo nombres típicos (ej. 10 caracteres cada uno) y fecha (10 caracteres), los strings suman ~33 bytes (11 + 11 + 11).
+- **Tamaño total por apuesta aproximado:** 12 + 33 = 45 bytes.
+- **Máxima cantidad de apuestas por batch:** 8192 bytes / 45 bytes ≈ 182 apuestas. Este valor se configuró como default en `config.yaml` bajo `batch.maxAmount`, ajustable según necesidades.
+
+##### Nuevos OpCodes
+
+Se agregó el OpCode `REGISTER_BATCH_OF_BETS = 0x02` para distinguir el envío de batches del registro individual.
+
+**Formato del mensaje `REGISTER_BATCH_OF_BETS`:**
+
+1. `opCode`: `uint8` (1 byte, valor 0x02)
+2. `batch_size`: `uint32` (4 bytes, cantidad de apuestas en el batch)
+3. Repetir `batch_size` veces el payload de una apuesta individual (sin opCode):
+   - `agency`: `uint32`
+   - `first_name`: `uint8 len` + `len` bytes UTF-8
+   - `last_name`: `uint8 len` + `len` bytes UTF-8
+   - `document`: `uint32`
+   - `birthdate`: `uint8 len` + `len` bytes UTF-8
+   - `number`: `uint32`
+
+**Respuesta (ACK):**
+
+- `0x00`: Todas las apuestas del batch procesadas correctamente.
+- `0x01`: Error en al menos una apuesta (el batch se rechaza por completo).
+
+##### Implementación
+
+- **Cliente (Go):** Se modificó para leer archivos CSV (`.data/agency-{N}.csv`) usando un reader CSV. Las apuestas se agrupan en batches según `batch.maxAmount`, serializando y enviando cada batch. Se agregó logging para `action: batch_enviado | result: success | cantidad: ${N}`.
+- **Servidor (Python):** Se extendió el protocolo para leer `batch_size` y procesar múltiples apuestas. Si `store_bets(bets)` falla para alguna, se responde con error y se loguea `result: fail`. De lo contrario, `result: success`.
+- **Configuración:** `config.yaml` incluye `batch.maxAmount` con default calculado para no exceder 8kB. Los archivos CSV se montan vía volúmenes en Docker Compose.
+- **Tests:** Se agregaron tests unitarios para validar el parsing de batches y límites de tamaño.
+
 <a id="ejercicio-7"></a>
 ### Ejercicio N°7:
 
