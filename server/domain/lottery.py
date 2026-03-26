@@ -1,12 +1,12 @@
 from threading import Condition
 from model.bet import has_won
 from model.lottery_winner import LotteryWinner
+from model.bet import load_bets, store_bets
 
 class Lottery:
-    def __init__(self, total_agencies, storage, logger):
+    def __init__(self, total_agencies, logger):
         self._total_agencies = total_agencies
         self._logger = logger
-        self._storage = storage
         self._condition = Condition()
         self._agencies_done = set()
         self._winners = {}
@@ -14,7 +14,7 @@ class Lottery:
 
     def store(self, bets):
         with self._condition:
-            self._storage.store(bets)
+            store_bets(bets)
 
     def notify_done(self, agency_id):
         with self._condition:
@@ -30,7 +30,7 @@ class Lottery:
             return [LotteryWinner(doc) for doc in self._winners.get(agency_id, [])]
 
     def _run_lottery(self):
-        all_bets = self._storage.load()
+        all_bets = load_bets()
         for bet in all_bets:
             if has_won(bet):
                 self._winners.setdefault(bet.agency, []).append(bet.document)
