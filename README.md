@@ -48,7 +48,7 @@
 		- [Secciones críticas](#ejercicio-8-criticas)
 		- [GIL](#ejercicio-8-gil)
 		- [Carpetas](#ejercicio-8-carpetas)
-- [Condiciones de Entrega](#condiciones-de-entrega)
+- [Pruebas automáticas](#pruebas-automaticas)
 
 
 <a id="instrucciones-de-uso"></a>
@@ -607,16 +607,7 @@ Para ordenar responsabilidades, en Ej8 se reorganizó el servidor en capas:
 - `server/model/`: entidades y helpers provistos (por ejemplo `Bet`, `LotteryWinner`, `store_bets/load_bets/has_won`).
 - `server/common/`: utilidades compartidas (por ejemplo `OpCode`).
 
-<a id="condiciones-de-entrega"></a>
-## Condiciones de Entrega
-Se espera que los alumnos realicen un _fork_ del presente repositorio para el desarrollo de los ejercicios y que aprovechen el esqueleto provisto tanto (o tan poco) como consideren necesario.
+<a id="pruebas-automaticas"></a>
+## Pruebas automáticas
 
-Cada ejercicio deberá resolverse en una rama independiente con nombres siguiendo el formato `ej${Nro de ejercicio}`. Se permite agregar commits en cualquier órden, así como crear una rama a partir de otra, pero al momento de la entrega deberán existir 8 ramas llamadas: ej1, ej2, ..., ej7, ej8.
- (hint: verificar listado de ramas y últimos commits con `git ls-remote`)
-
-Se espera que se redacte una sección del README en donde se indique cómo ejecutar cada ejercicio y se detallen los aspectos más importantes de la solución provista, como ser el protocolo de comunicación implementado (Parte 2) y los mecanismos de sincronización utilizados (Parte 3).
-
-Se proveen [pruebas automáticas](https://github.com/7574-sistemas-distribuidos/tp0-tests) de caja negra. Se exige que la resolución de los ejercicios pase tales pruebas, o en su defecto que las discrepancias sean justificadas y discutidas con los docentes antes del día de la entrega. 
-
-El incumplimiento de las pruebas es condición de desaprobación, pero su cumplimiento no es suficiente para la aprobación.  Se pide a los alumnos leer atentamente y **tener en cuenta** los criterios de corrección informados  [en el campus](https://campusgrado.fi.uba.ar/mod/page/view.php?id=73393).
-Respetar el formato y contenido las entradas de logs descritas en los ejercicios, pues son las que se chequean en cada uno de los tests.
+Se proveen pruebas automáticas de caja negra en: https://github.com/7574-sistemas-distribuidos/tp0-tests
