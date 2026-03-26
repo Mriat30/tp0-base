@@ -296,8 +296,88 @@ Se deberá implementar un módulo de comunicación entre el cliente y el servido
 * Correcta separación de responsabilidades entre modelo de dominio y capa de comunicación.
 * Correcto empleo de sockets, incluyendo manejo de errores y evitando los fenómenos conocidos como [_short read y short write_](https://cs61.seas.harvard.edu/site/2018/FileDescriptors/).
 
-#### Explicacion de la solucion
-Lo primero que hice fue crear el folder *model* para separar la logica de negocio de la logica de comunicacion. Dentro de *model* coloque el archivo *utils.py* (que luego lo renombree a *bet.py* para ser mas representativo)
+#### Desarrollo realizado
+
+En este ejercicio el cambio principal no está en “mandar un string” como en el echo server, sino en definir un **protocolo** para transportar una **apuesta** (modelo de dominio) entre dos entidades (agencia ↔ central) de forma determinística y robusta.
+
+La solución se estructura en dos capas bien separadas:
+
+- **Modelo de dominio (Bet):** representa una apuesta con sus campos tipados.
+- **Capa de comunicación (Protocol):** define cómo se serializa/deserializa esa apuesta sobre TCP.
+
+##### Modelado
+
+Se definió la entidad **Bet** en ambos componentes, respetando el mismo set de atributos:
+
+- `agency`: id de la agencia que envía la apuesta.
+- `first_name`, `last_name`: nombre y apellido.
+- `document`: DNI.
+- `birthdate`: fecha de nacimiento en formato `YYYY-MM-DD`.
+- `number`: número apostado.
+
+En el servidor, el modelo vive en `server/model/bet.py` (incluye además la persistencia vía `store_bets(...)`). En el cliente, el DTO equivalente está en `client/common/model/bet.go`.
+
+##### Protocolo de comunicación
+
+Se implementó un protocolo **binario** simple y explícito (Big Endian) para evitar ambigüedades de parsing y depender lo menos posible de formatos de texto.
+
+La comunicación se modela como una secuencia de:
+
+1. **Cliente → Servidor:** `action` + payload.
+2. **Servidor → Cliente:** ACK de registro.
+
+**Acciones**
+
+- El primer byte del mensaje es un `action` que indica qué operación se quiere ejecutar.
+- Para Ej5 se definió `REGISTER_SINGLE_BET = 0x01`.
+
+**Formato del mensaje `REGISTER_SINGLE_BET`**
+
+El cliente envía, en este orden:
+
+1. `action`: `uint8` (1 byte)
+2. `agency`: `uint32` (4 bytes)
+3. `first_name`: `uint8 len` + `len` bytes UTF-8
+4. `last_name`: `uint8 len` + `len` bytes UTF-8
+5. `document`: `uint32` (4 bytes)
+6. `birthdate`: `uint8 len` + `len` bytes UTF-8
+7. `number`: `uint32` (4 bytes)
+
+Este diseño hace que el stream sea auto-delimitado: los strings incluyen su longitud, y los enteros tienen tamaño fijo.
+
+**Respuesta (ACK)**
+
+- El servidor responde con 1 byte.
+- `0x00` significa “apuesta registrada OK”.
+- Cualquier valor distinto de `0x00` se interpreta como error.
+
+##### Implementación del protocolo
+
+- **Cliente:** `client/common/protocol/protocol.go`
+	- Serializa con `encoding/binary` en Big Endian.
+	- Para strings escribe `uint8(len)` + bytes.
+	- Valida el ACK con `ReadBetRegistered()`.
+	- Se agregaron tests unitarios del layout del paquete en `client/common/protocol/protocol_test.go` (verifica orden y tamaños de campos).
+
+- **Servidor:** `server/common/protocol.py`
+	- Interpreta el `action` (1 byte) y luego consume el payload.
+	- Implementa `_read_exactly(n)` para evitar **short reads**: si `recv()` retorna menos bytes de los esperados, sigue leyendo hasta completar o detectar EOF.
+	- Para strings lee primero 1 byte de longitud y luego exactamente esa cantidad de bytes.
+	- Envía el ACK con `sendall` para evitar **short writes**.
+
+##### Tests unitarios
+
+A partir de este ejercicio se agregaron **tests unitarios** para validar el protocolo y el modelado sin depender de levantar Docker Compose.
+
+- **Cliente (Go):**
+	- Los tests del protocolo viven en `client/common/protocol/protocol_test.go`.
+	- Validan el **layout** del mensaje: orden de campos, tamaños (`uint8`/`uint32`) y encoding Big Endian.
+	- Ejecución: `make test-client`.
+
+- **Servidor (Python):**
+	- Los tests viven en `server/tests/` (por ejemplo `test_protocol.py`, `test_client_handler.py`, `test_bet.py`).
+	- Ejecución: `make test-server`.
+	- El target crea un `venv`, instala `pytest` y corre los tests con `PYTHONPATH` configurado para que los imports del servidor funcionen.
 
 <a id="ejercicio-6"></a>
 ### Ejercicio N°6:
