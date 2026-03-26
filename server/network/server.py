@@ -40,7 +40,7 @@ class Server:
             client_socket = self.__accept_new_connection()
             if client_socket:
                 protocol = ServerProtocol(client_socket, logging.getLogger(__name__))
-                handler = ClientHandler(protocol, self, self._lottery, logging.getLogger(__name__))
+                handler = ClientHandler(protocol, self._lottery, logging.getLogger(__name__))
                 thread = threading.Thread(target=handler.start)
                 self._clients.append((thread,handler))
                 thread.start()
