@@ -1,5 +1,5 @@
 from .protocol import ServerProtocol
-from .protocol import ActionType
+from .utils import ActionType
 from model.bet import store_bets
 import logging
 import socket

@@ -70,9 +70,8 @@ class Server:
         if client is None:
             return
         try:
-            client.shutdown(socket.SHUT_RDWR)
-        except OSError:
+            client.stop()
+        except Exception:
             pass
         finally:
-            client.close()
             self.client = None
