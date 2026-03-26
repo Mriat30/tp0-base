@@ -33,6 +33,7 @@ def main():
         "      interval: 2s",
         "      timeout: 5s",
         "      retries: 5",
+        "      start_period: 2s",
         ""
     ]
 
