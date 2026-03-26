@@ -4,7 +4,6 @@ import signal
 from network.client_handler import ClientHandler
 from domain.lottery import Lottery
 from network.protocol import ServerProtocol
-from domain.bet_storage import BetStorage
 import threading
 
 class Server:
@@ -20,8 +19,7 @@ class Server:
             accept_timeout = self._DEFAULT_ACCEPT_TIMEOUT
         self._server_socket.settimeout(accept_timeout)
         self._should_be_running = False
-        self._bet_storage = BetStorage()
-        self._lottery = Lottery(n_clients,self._bet_storage, logging.getLogger(__name__))
+        self._lottery = Lottery(n_clients, logging.getLogger(__name__))
         self._clients = []
         signal.signal(signal.SIGTERM, self.__handle_sigterm)
 
