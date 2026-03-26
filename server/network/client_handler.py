@@ -59,7 +59,7 @@ class ClientHandler:
     
     def _process_store_bets(self, bets, addr):
         try:
-            self._bet_storage.store(bets)
+            self._lottery.store(bets)
             self._protocol.send_bet_registered()
             self._logger.info(f'action: apuesta_recibida | result: success | ip: {addr[0]} | cantidad: {len(bets)} | dni: {bets[0].document}')
         except Exception as e:

@@ -12,14 +12,15 @@ class Lottery:
         self._winners = {}
         self._lottery_done = False
 
+    def store(self, bets):
+        with self._condition:
+            self._storage.store(bets)
+
     def notify_done(self, agency_id):
         with self._condition:
             self._agencies_done.add(agency_id)
-            should_run = len(self._agencies_done) == self._total_agencies
-
-        if should_run:
-            self._run_lottery()
-            with self._condition:
+            if len(self._agencies_done) == self._total_agencies:
+                self._run_lottery()
                 self._lottery_done = True
                 self._condition.notify_all()
 
