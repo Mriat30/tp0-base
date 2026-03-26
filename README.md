@@ -145,6 +145,14 @@ Ejemplo de uso:
 - Mantener la estructura base del compose (servicio `server`, redes, volúmenes, etc.).
 - Sobrescribir el archivo de salida si ya existe, de modo que correr nuevamente el script regenere el compose acorde a la nueva cantidad de clientes.
 
+Adicionalmente, se incorporó manejo explícito de dependencias entre el servidor y los clientes utilizando **healthchecks** de Docker:
+
+- En `mi-generador.py` se definió un `healthcheck` para el servicio `server` que ejecuta el script `/healthcheck.sh` dentro del contenedor. Este script, ubicado en [server/healthcheck.sh](server/healthcheck.sh), lee el `SERVER_PORT` desde `config.ini` y usa `nc` para verificar que el puerto esté escuchando.
+- Cada `clientN` se declara con `depends_on: server: condition: service_healthy`, de forma tal que Docker solo considere los clientes “listos” una vez que el healthcheck del servidor haya pasado.
+- El `Dockerfile` del servidor instala `netcat-openbsd` y copia el código de `server/` en la imagen, permitiendo que el healthcheck use `nc` dentro del contenedor sin requerir herramientas adicionales en el host.
+
+Con estos cambios, el `docker-compose` generado no solo crea dinámicamente la cantidad de clientes, sino que también garantiza que el servidor esté efectivamente aceptando conexiones antes de que los clientes comiencen a enviar mensajes.
+
 <a id="ejercicio-2"></a>
 ### Ejercicio N°2:
 Modificar el cliente y el servidor para lograr que realizar cambios en el archivo de configuración no requiera reconstruír las imágenes de Docker para que los mismos sean efectivos. La configuración a través del archivo correspondiente (`config.ini` y `config.yaml`, dependiendo de la aplicación) debe ser inyectada en el container y persistida por fuera de la imagen (hint: `docker volumes`).
