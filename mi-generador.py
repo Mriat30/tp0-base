@@ -25,6 +25,15 @@ def main():
         "      - PYTHONUNBUFFERED=1",
         "    networks:",
         "      - testing_net",
+        "    healthcheck:",
+        "      test:",
+        "        - CMD",
+        "        - sh",
+        "        - /healthcheck.sh",
+        "      interval: 2s",
+        "      timeout: 5s",
+        "      retries: 5",
+        "      start_period: 2s",
         ""
     ]
 
@@ -40,7 +49,8 @@ def main():
         content.append(f"    networks:")
         content.append(f"      - testing_net")
         content.append(f"    depends_on:")
-        content.append(f"      - server")
+        content.append(f"      server:")
+        content.append(f"        condition: service_healthy")
         content.append("")
 
     content.extend([
