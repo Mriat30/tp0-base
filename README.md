@@ -409,11 +409,11 @@ Se impuso una limitación máxima de **8 kB** por paquete para evitar fragmentac
 
 ##### Nuevos OpCodes
 
-Se agregó el OpCode `REGISTER_BATCH_OF_BETS = 0x02` para distinguir el envío de batches del registro individual.
+Se agregó el OpCode `REGISTER_BATCH_OF_BETS = 0x03` para distinguir el envío de batches del registro individual.
 
 **Formato del mensaje `REGISTER_BATCH_OF_BETS`:**
 
-1. `opCode`: `uint8` (1 byte, valor 0x02)
+1. `opCode`: `uint8` (1 byte, valor 0x03)
 2. `batch_size`: `uint32` (4 bytes, cantidad de apuestas en el batch)
 3. Repetir `batch_size` veces el payload de una apuesta individual (sin opCode):
    - `agency`: `uint32`
@@ -425,15 +425,17 @@ Se agregó el OpCode `REGISTER_BATCH_OF_BETS = 0x02` para distinguir el envío d
 
 **Respuesta (ACK):**
 
-- `0x00`: Todas las apuestas del batch procesadas correctamente.
-- `0x01`: Error en al menos una apuesta (el batch se rechaza por completo).
+- El servidor responde `BET_REGISTERED = 0x04` si el batch fue persistido correctamente.
+- Ante error (por ejemplo una excepción en persistencia), el servidor loguea `result: fail` y la conexión puede cerrarse sin enviar ACK.
 
 ##### Implementación
 
-- **Cliente (Go):** Se modificó para leer archivos CSV (`.data/agency-{N}.csv`) usando un reader CSV. Las apuestas se agrupan en batches según `batch.maxAmount`, serializando y enviando cada batch. Se agregó logging para `action: batch_enviado | result: success | cantidad: ${N}`.
+- **Cliente (Go):** Se modificó para leer archivos CSV (`.data/agency-{N}.csv`) usando un reader CSV. Las apuestas se agrupan en batches según `batch.maxAmount`, serializando y enviando cada batch. Se loguea el procesamiento de cada batch (`action: batch_procesado | result: success | cantidad: ${N}`).
 - **Servidor (Python):** Se extendió el protocolo para leer `batch_size` y procesar múltiples apuestas. Si `store_bets(bets)` falla para alguna, se responde con error y se loguea `result: fail`. De lo contrario, `result: success`.
-- **Configuración:** `config.yaml` incluye `batch.maxAmount` con default calculado para no exceder 8kB. Los archivos CSV se montan vía volúmenes en Docker Compose.
+- **Configuración:** [client/config.yaml](client/config.yaml) incluye `batch.maxAmount` como límite de cantidad por batch. Además, el protocolo del cliente impone un límite **real** por bytes (`8192`) y rechaza el envío si el buffer serializado excede ese tamaño.
 - **Tests:** Se agregaron tests unitarios para validar el parsing de batches y límites de tamaño.
+
+Nota: la estimación de ~182 apuestas es un techo teórico (depende de longitudes reales de strings). En la práctica se usa un `batch.maxAmount` conservador para no rozar el límite de 8kB cuando los campos dinámicos crecen.
 
 <a id="ejercicio-7"></a>
 ### Ejercicio N°7:
@@ -448,6 +450,40 @@ Luego de este evento, podrá verificar cada apuesta con las funciones `load_bets
 Las funciones `load_bets(...)` y `has_won(...)` son provistas por la cátedra y no podrán ser modificadas por el alumno.
 
 No es correcto realizar un broadcast de todos los ganadores hacia todas las agencias, se espera que se informen los DNIs ganadores que correspondan a cada una de ellas.
+
+#### Desarrollo realizado
+
+En este ejercicio se incorporó la lógica de **sorteo** y la coordinación entre agencias para que el servidor recién anuncie ganadores cuando **todas** hayan terminado de enviar apuestas. El punto clave es que, a diferencia de los ejercicios anteriores, el servidor necesita **mantener abiertas** las conexiones de cada agencia hasta el momento del sorteo.
+
+##### Síntesis de la secuencia
+
+1. **Handshake:** el cliente abre una conexión TCP y envía `CLIENT_ID = 0x01` + `client_id` (uint32).
+2. **Envío de apuestas:** el cliente envía batches (`REGISTER_BATCH_OF_BETS = 0x03`) y espera el ACK `BET_REGISTERED = 0x04` por cada batch.
+3. **Notificación de finalización:** al terminar el archivo, el cliente envía `WAITING_FOR_WINNERS = 0x06`.
+4. **Bloqueo esperando resultados:** inmediatamente después, el cliente llama a `ReadWinners()`, que queda **bloqueado** leyendo del socket hasta que el servidor envíe el anuncio de ganadores.
+5. **Sorteo y anuncio:** cuando el servidor recibió `WAITING_FOR_WINNERS` de todas las agencias esperadas, ejecuta el sorteo, loguea `action: sorteo | result: success` y envía a cada conexión su lista de ganadores (`WINNERS = 0x05`).
+6. **Cierre:** el servidor cierra cada socket luego de notificar; el cliente termina su ejecución tras recibir la lista.
+
+##### Cómo se mantienen las conexiones abiertas
+
+- En el servidor, cuando `ClientHandler` recibe `WAITING_FOR_WINNERS`, llama a `Lottery.notify_done(agency_id, protocol)` y **guarda** ese `protocol` (que envuelve el socket) en una estructura interna asociada al `agency_id`.
+- Para que el handler no cierre el socket en su `finally`, se “desacopla” del protocolo asignando `self._protocol = None` y se detiene el loop. De esa forma, la conexión queda viva pero ya no se lee más desde ese socket hasta el sorteo.
+- El loop principal del servidor puede seguir aceptando nuevas conexiones (otras agencias), mientras conserva las anteriores abiertas dentro de `Lottery`.
+
+##### Cómo el cliente espera los ganadores (sin busy-wait)
+
+- Tras enviar `WAITING_FOR_WINNERS = 0x06`, el cliente ejecuta `ReadWinners()`.
+- Esa lectura es **bloqueante** por naturaleza (I/O de TCP): el proceso queda esperando datos del socket, sin consumir CPU en un loop activo, hasta que el servidor finalmente escriba el anuncio.
+
+##### Formato del anuncio de ganadores
+
+El servidor responde con:
+
+1. `WINNERS`: `uint8` (1 byte, valor 0x05)
+2. `length`: `uint32` (4 bytes)
+3. `payload`: `length` bytes UTF-8 con los DNIs ganadores separados por comas (por ejemplo `"123,456,789"`).
+
+Si no hay ganadores para una agencia, `length = 0` y el payload es vacío.
 
 <a id="parte-3-repaso-de-concurrencia"></a>
 ## Parte 3: Repaso de Concurrencia
