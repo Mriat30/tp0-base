@@ -26,6 +26,7 @@ class Lottery:
         ]
 
     def _run_lottery(self):
+        self._storage.flush()
         all_bets = self._storage.load()
         for bet in all_bets:
             if has_won(bet):
