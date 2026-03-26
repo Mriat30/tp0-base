@@ -12,15 +12,42 @@
 	- [Ejemplo](#ejemplo)
 - [Parte 1: Introducción a Docker](#parte-1-introduccion-a-docker)
 	- [Ejercicio N°1](#ejercicio-1)
+		- [Desarrollo realizado](#ejercicio-1-desarrollo)
 	- [Ejercicio N°2](#ejercicio-2)
+		- [Desarrollo realizado](#ejercicio-2-desarrollo)
 	- [Ejercicio N°3](#ejercicio-3)
+		- [Desarrollo realizado](#ejercicio-3-desarrollo)
 	- [Ejercicio N°4](#ejercicio-4)
+		- [Desarrollo realizado](#ejercicio-4-desarrollo)
+		- [Servidor (Python)](#ejercicio-4-servidor)
+		- [Cliente (Go)](#ejercicio-4-cliente)
+		- [Verificación del apagado](#ejercicio-4-verificacion)
 - [Parte 2: Repaso de Comunicaciones](#parte-2-repaso-de-comunicaciones)
 	- [Ejercicio N°5](#ejercicio-5)
+		- [Desarrollo realizado](#ejercicio-5-desarrollo)
+		- [Modelado](#ejercicio-5-modelado)
+		- [Protocolo](#ejercicio-5-protocolo)
+		- [Implementación](#ejercicio-5-implementacion)
+		- [Tests](#ejercicio-5-tests)
 	- [Ejercicio N°6](#ejercicio-6)
+		- [Desarrollo realizado](#ejercicio-6-desarrollo)
+		- [Límite de 8kB](#ejercicio-6-limite)
+		- [OpCodes](#ejercicio-6-opcodes)
+		- [Implementación](#ejercicio-6-implementacion)
 	- [Ejercicio N°7](#ejercicio-7)
+		- [Desarrollo realizado](#ejercicio-7-desarrollo)
+		- [Secuencia](#ejercicio-7-secuencia)
+		- [Conexiones abiertas](#ejercicio-7-conexiones)
+		- [Espera del cliente](#ejercicio-7-espera)
+		- [Formato ganadores](#ejercicio-7-formato)
 - [Parte 3: Repaso de Concurrencia](#parte-3-repaso-de-concurrencia)
 	- [Ejercicio N°8](#ejercicio-8)
+		- [Desarrollo realizado](#ejercicio-8-desarrollo)
+		- [Flujo](#ejercicio-8-flujo)
+		- [Sincronización](#ejercicio-8-sync)
+		- [Secciones críticas](#ejercicio-8-criticas)
+		- [GIL](#ejercicio-8-gil)
+		- [Carpetas](#ejercicio-8-carpetas)
 - [Condiciones de Entrega](#condiciones-de-entrega)
 
 
@@ -119,6 +146,7 @@ python3 mi-generador.py $1 $2
 
 En el archivo de Docker Compose de salida se pueden definir volúmenes, variables de entorno y redes con libertad, pero recordar actualizar este script cuando se modifiquen tales definiciones en los sucesivos ejercicios.
 
+<a id="ejercicio-1-desarrollo"></a>
 #### Desarrollo realizado
 
 Para este ejercicio se implementó la solución en dos componentes:
@@ -157,6 +185,7 @@ Con estos cambios, el `docker-compose` generado no solo crea dinámicamente la c
 ### Ejercicio N°2:
 Modificar el cliente y el servidor para lograr que realizar cambios en el archivo de configuración no requiera reconstruír las imágenes de Docker para que los mismos sean efectivos. La configuración a través del archivo correspondiente (`config.ini` y `config.yaml`, dependiendo de la aplicación) debe ser inyectada en el container y persistida por fuera de la imagen (hint: `docker volumes`).
 
+<a id="ejercicio-2-desarrollo"></a>
 #### Desarrollo realizado
 
 Para este ejercicio se reutilizó el mismo flujo `generar-compose.sh` → `mi-generador.py`, agregando en `mi-generador.py` la lógica necesaria para inyectar los archivos de configuración en los contenedores mediante volúmenes.
@@ -189,6 +218,7 @@ En caso de que la validación sea exitosa imprimir: `action: test_echo_server | 
 
 El script deberá ubicarse en la raíz del proyecto. Netcat no debe ser instalado en la máquina _host_ y no se pueden exponer puertos del servidor para realizar la comunicación (hint: `docker network`). `
 
+<a id="ejercicio-3-desarrollo"></a>
 #### Desarrollo realizado
 
 Para este ejercicio se implementó el script `validar-echo-server.sh` en la raíz del proyecto, utilizando un contenedor temporal con `busybox` para ejecutar `nc` (netcat) dentro de la misma red de Docker que el servidor, cumpliendo así con la restricción de no instalar netcat en el _host_ ni exponer puertos.
@@ -217,6 +247,7 @@ De esta forma, `validar-echo-server.sh` permite verificar rápidamente desde el 
 ### Ejercicio N°4:
 Modificar servidor y cliente para que ambos sistemas terminen de forma _graceful_ al recibir la signal SIGTERM. Terminar la aplicación de forma _graceful_ implica que todos los _file descriptors_ (entre los que se encuentran archivos, sockets, threads y procesos) deben cerrarse correctamente antes que el thread de la aplicación principal muera. Loguear mensajes en el cierre de cada recurso (hint: Verificar que hace el flag `-t` utilizado en el comando `docker compose down`).
 
+<a id="ejercicio-4-desarrollo"></a>
 #### Desarrollo realizado
 
 Para este ejercicio se implementó un mecanismo de apagado _graceful_ en **servidor** y **cliente** frente a `SIGTERM` (la señal que envía Docker al frenar containers). La idea general es:
@@ -226,6 +257,7 @@ Para este ejercicio se implementó un mecanismo de apagado _graceful_ en **servi
 - Cerrar sockets abiertos (tanto el socket de escucha como el socket del cliente), dejando el proceso en un estado consistente.
 - Loguear el progreso del apagado para poder verificarlo por `docker compose logs`.
 
+<a id="ejercicio-4-servidor"></a>
 ##### Servidor (Python)
 
 La lógica está encapsulada en la clase `Server` y el loop de aceptación de conexiones. Los puntos relevantes son:
@@ -243,6 +275,7 @@ La lógica está encapsulada en la clase `Server` y el loop de aceptación de co
 	- El socket de escucha se cierra en `__stop()` con `self._server_socket.close()`.
 - **Manejo de errores en comunicación:** el `recv/send` de cada conexión está envuelto en `try/except OSError` y ante error se loguea `action: receive_message | result: fail | error: ...`, garantizando igualmente el cleanup en `finally`.
 
+<a id="ejercicio-4-cliente"></a>
 ##### Cliente (Go)
 
 La lógica está en el loop del cliente y un listener de señales:
@@ -260,6 +293,7 @@ La lógica está en el loop del cliente y un listener de señales:
 - **Cierre de sockets:** el cliente abre una conexión TCP por iteración y la cierra explícitamente al terminar de leer la respuesta (`c.conn.Close()`), evitando acumular descriptores.
 - **Salida controlada del loop:** al bajar el flag `should_be_running`, el `for` deja de iterar y no se crean nuevas conexiones.
 
+<a id="ejercicio-4-verificacion"></a>
 ##### Cómo verificar el apagado
 
 1. Levantar el entorno: `make docker-compose-up`.
@@ -296,6 +330,7 @@ Se deberá implementar un módulo de comunicación entre el cliente y el servido
 * Correcta separación de responsabilidades entre modelo de dominio y capa de comunicación.
 * Correcto empleo de sockets, incluyendo manejo de errores y evitando los fenómenos conocidos como [_short read y short write_](https://cs61.seas.harvard.edu/site/2018/FileDescriptors/).
 
+<a id="ejercicio-5-desarrollo"></a>
 #### Desarrollo realizado
 
 En este ejercicio el cambio principal no está en “mandar un string” como en el echo server, sino en definir un **protocolo** para transportar una **apuesta** (modelo de dominio) entre dos entidades (agencia ↔ central) de forma determinística y robusta.
@@ -305,6 +340,7 @@ La solución se estructura en dos capas bien separadas:
 - **Modelo de dominio (Bet):** representa una apuesta con sus campos tipados.
 - **Capa de comunicación (Protocol):** define cómo se serializa/deserializa esa apuesta sobre TCP.
 
+<a id="ejercicio-5-modelado"></a>
 ##### Modelado
 
 Se definió la entidad **Bet** en ambos componentes, respetando el mismo set de atributos:
@@ -317,6 +353,7 @@ Se definió la entidad **Bet** en ambos componentes, respetando el mismo set de 
 
 En el servidor, el modelo vive en `server/model/bet.py` (incluye además la persistencia vía `store_bets(...)`). En el cliente, el DTO equivalente está en `client/common/model/bet.go`.
 
+<a id="ejercicio-5-protocolo"></a>
 ##### Protocolo de comunicación
 
 Se implementó un protocolo **binario** simple y explícito (Big Endian) para evitar ambigüedades de parsing y depender lo menos posible de formatos de texto.
@@ -351,6 +388,7 @@ Este diseño hace que el stream sea auto-delimitado: los strings incluyen su lon
 - `0x00` significa “apuesta registrada OK”.
 - Cualquier valor distinto de `0x00` se interpreta como error.
 
+<a id="ejercicio-5-implementacion"></a>
 ##### Implementación del protocolo
 
 - **Cliente:** `client/common/protocol/protocol.go`
@@ -365,6 +403,7 @@ Este diseño hace que el stream sea auto-delimitado: los strings incluyen su lon
 	- Para strings lee primero 1 byte de longitud y luego exactamente esa cantidad de bytes.
 	- Envía el ACK con `sendall` para evitar **short writes**.
 
+<a id="ejercicio-5-tests"></a>
 ##### Tests unitarios
 
 A partir de este ejercicio se agregaron **tests unitarios** para validar el protocolo y el modelado sin depender de levantar Docker Compose.
@@ -393,10 +432,12 @@ La cantidad máxima de apuestas dentro de cada _batch_ debe ser configurable des
 
 Por su parte, el servidor deberá responder con éxito solamente si todas las apuestas del _batch_ fueron procesadas correctamente.
 
+<a id="ejercicio-6-desarrollo"></a>
 #### Desarrollo realizado
 
 En este ejercicio se introdujo el concepto de **batches** para optimizar la transmisión de apuestas, permitiendo enviar múltiples apuestas en una sola consulta TCP, reduciendo la latencia y mejorando la eficiencia de red.
 
+<a id="ejercicio-6-limite"></a>
 ##### Limitación de tamaño de paquetes
 
 Se impuso una limitación máxima de **8 kB** por paquete para evitar fragmentación excesiva y optimizar el uso de buffers. Esta restricción afecta directamente la cantidad máxima de apuestas por batch, ya que cada apuesta tiene un tamaño variable debido a los campos de texto (nombres y fecha de nacimiento).
@@ -407,6 +448,7 @@ Se impuso una limitación máxima de **8 kB** por paquete para evitar fragmentac
 - **Tamaño total por apuesta aproximado:** 12 + 33 = 45 bytes.
 - **Máxima cantidad de apuestas por batch:** 8192 bytes / 45 bytes ≈ 182 apuestas. Este valor se configuró como default en `config.yaml` bajo `batch.maxAmount`, ajustable según necesidades.
 
+<a id="ejercicio-6-opcodes"></a>
 ##### Nuevos OpCodes
 
 Se agregó el OpCode `REGISTER_BATCH_OF_BETS = 0x03` para distinguir el envío de batches del registro individual.
@@ -428,6 +470,7 @@ Se agregó el OpCode `REGISTER_BATCH_OF_BETS = 0x03` para distinguir el envío d
 - El servidor responde `BET_REGISTERED = 0x04` si el batch fue persistido correctamente.
 - Ante error (por ejemplo una excepción en persistencia), el servidor loguea `result: fail` y la conexión puede cerrarse sin enviar ACK.
 
+<a id="ejercicio-6-implementacion"></a>
 ##### Implementación
 
 - **Cliente (Go):** Se modificó para leer archivos CSV (`.data/agency-{N}.csv`) usando un reader CSV. Las apuestas se agrupan en batches según `batch.maxAmount`, serializando y enviando cada batch. Se loguea el procesamiento de cada batch (`action: batch_procesado | result: success | cantidad: ${N}`).
@@ -451,10 +494,12 @@ Las funciones `load_bets(...)` y `has_won(...)` son provistas por la cátedra y 
 
 No es correcto realizar un broadcast de todos los ganadores hacia todas las agencias, se espera que se informen los DNIs ganadores que correspondan a cada una de ellas.
 
+<a id="ejercicio-7-desarrollo"></a>
 #### Desarrollo realizado
 
 En este ejercicio se incorporó la lógica de **sorteo** y la coordinación entre agencias para que el servidor recién anuncie ganadores cuando **todas** hayan terminado de enviar apuestas. El punto clave es que, a diferencia de los ejercicios anteriores, el servidor necesita **mantener abiertas** las conexiones de cada agencia hasta el momento del sorteo.
 
+<a id="ejercicio-7-secuencia"></a>
 ##### Síntesis de la secuencia
 
 1. **Handshake:** el cliente abre una conexión TCP y envía `CLIENT_ID = 0x01` + `client_id` (uint32).
@@ -464,17 +509,20 @@ En este ejercicio se incorporó la lógica de **sorteo** y la coordinación entr
 5. **Sorteo y anuncio:** cuando el servidor recibió `WAITING_FOR_WINNERS` de todas las agencias esperadas, ejecuta el sorteo, loguea `action: sorteo | result: success` y envía a cada conexión su lista de ganadores (`WINNERS = 0x05`).
 6. **Cierre:** el servidor cierra cada socket luego de notificar; el cliente termina su ejecución tras recibir la lista.
 
+<a id="ejercicio-7-conexiones"></a>
 ##### Cómo se mantienen las conexiones abiertas
 
 - En el servidor, cuando `ClientHandler` recibe `WAITING_FOR_WINNERS`, llama a `Lottery.notify_done(agency_id, protocol)` y **guarda** ese `protocol` (que envuelve el socket) en una estructura interna asociada al `agency_id`.
 - Para que el handler no cierre el socket en su `finally`, se “desacopla” del protocolo asignando `self._protocol = None` y se detiene el loop. De esa forma, la conexión queda viva pero ya no se lee más desde ese socket hasta el sorteo.
 - El loop principal del servidor puede seguir aceptando nuevas conexiones (otras agencias), mientras conserva las anteriores abiertas dentro de `Lottery`.
 
+<a id="ejercicio-7-espera"></a>
 ##### Cómo el cliente espera los ganadores (sin busy-wait)
 
 - Tras enviar `WAITING_FOR_WINNERS = 0x06`, el cliente ejecuta `ReadWinners()`.
 - Esa lectura es **bloqueante** por naturaleza (I/O de TCP): el proceso queda esperando datos del socket, sin consumir CPU en un loop activo, hasta que el servidor finalmente escriba el anuncio.
 
+<a id="ejercicio-7-formato"></a>
 ##### Formato del anuncio de ganadores
 
 El servidor responde con:
@@ -493,6 +541,71 @@ En este ejercicio es importante considerar los mecanismos de sincronización a u
 ### Ejercicio N°8:
 
 Modificar el servidor para que permita aceptar conexiones y procesar mensajes en paralelo. En caso de que el alumno implemente el servidor en Python utilizando _multithreading_,  deberán tenerse en cuenta las [limitaciones propias del lenguaje](https://wiki.python.org/moin/GlobalInterpreterLock).
+
+<a id="ejercicio-8-desarrollo"></a>
+#### Desarrollo realizado
+
+En este ejercicio el servidor pasa a ser **concurrente**: en lugar de procesar una única conexión por vez, acepta múltiples clientes y los atiende en paralelo usando **threads**. Para coordinar el acceso al estado compartido (persistencia y sorteo) se implementó un monitor llamado **`Lottery`**.
+
+<a id="ejercicio-8-flujo"></a>
+##### Flujo general (servidor concurrente)
+
+1. El thread principal del servidor ejecuta el loop de `accept()`.
+2. Por cada conexión aceptada crea un `ClientHandler` y lanza un `threading.Thread(target=handler.start)`.
+3. Cada `ClientHandler` procesa el protocolo de su cliente (apuestas individuales/batches) y, cuando recibe `WAITING_FOR_WINNERS`, se coordina con el monitor `Lottery` para esperar el sorteo y luego enviar la respuesta `WINNERS`.
+
+Esto permite que mientras una agencia está enviando batches, otra pueda estar esperando ganadores, y una tercera todavía siga conectándose/enviando.
+
+<a id="ejercicio-8-sync"></a>
+##### Sincronización: monitor `Lottery` (Condition)
+
+El monitor se implementa con `threading.Condition`, que combina:
+
+- **Exclusión mutua:** internamente contiene un lock; el bloque `with self._condition:` asegura que solo un thread ejecute una sección crítica a la vez.
+- **Espera/Señalización:** los threads pueden dormir con `wait_for(...)` sin hacer busy-wait, y despertarse con `notify_all()` cuando se cumple una condición.
+
+###### Estado compartido protegido
+
+Dentro de `Lottery` se protegen (bajo el mismo lock) estas estructuras compartidas:
+
+- `self._agencies_done`: set con las agencias que notificaron fin.
+- `self._winners`: diccionario `agency_id -> [dni]` calculado al correr el sorteo.
+- `self._lottery_done`: flag que habilita a devolver ganadores.
+
+<a id="ejercicio-8-criticas"></a>
+###### Secciones críticas (exclusión mutua)
+
+- **Persistencia de apuestas (`Lottery.store`)**: envuelve `store_bets(bets)` dentro del monitor para que los writes a storage no se intercalen entre threads.
+- **Notificación de fin (`Lottery.notify_done`)**: agrega la agencia al set y, si ya llegaron todas, ejecuta `_run_lottery()`, setea `self._lottery_done = True` y hace `notify_all()`.
+- **Espera de resultados (`Lottery.get_winners`)**: bloquea con `wait_for(lambda: self._lottery_done)` hasta que el sorteo esté listo y recién ahí retorna los ganadores de esa agencia.
+
+##### Cómo se mantiene la conexión abierta hasta el sorteo
+
+En Ej7 el servidor “guardaba” protocolos para responder más tarde. En Ej8 se evita ese acoplamiento manteniendo un flujo más simple y seguro para multithreading:
+
+- El thread del `ClientHandler` que recibe `WAITING_FOR_WINNERS` llama primero a `notify_done(agency_id)`.
+- Luego llama a `get_winners(agency_id)` y queda **bloqueado** dentro del monitor (vía `Condition.wait_for`) hasta que el último cliente dispare el sorteo.
+- Cuando `Lottery` ejecuta `notify_all()`, cada handler se desbloquea, obtiene su lista y responde por **su propio socket** con `send_winners(...)`.
+
+Este patrón mantiene el socket abierto “naturalmente” porque el handler/thread sigue vivo; no hace falta compartir sockets entre threads.
+
+<a id="ejercicio-8-gil"></a>
+##### GIL y multithreading en Python
+
+Python (CPython) tiene el **GIL (Global Interpreter Lock)**: aunque existan múltiples threads, solo uno ejecuta bytecode Python a la vez.
+
+- En este servidor, la concurrencia sigue siendo útil porque gran parte del tiempo los threads están en **I/O** (lectura/escritura de sockets y archivos), operaciones que suelen liberar el GIL.
+- Las partes **CPU-bound** (por ejemplo, recorrer todas las apuestas en `_run_lottery`) no escalan linealmente con threads por el GIL. Aun así, como se ejecuta una sola vez cuando llegan todas las agencias, no afecta el paralelismo del manejo de conexiones.
+
+<a id="ejercicio-8-carpetas"></a>
+##### Homogeneización de carpetas del servidor
+
+Para ordenar responsabilidades, en Ej8 se reorganizó el servidor en capas:
+
+- `server/network/`: capa de red (loop del servidor con threads, `ClientHandler`, `ServerProtocol`).
+- `server/domain/`: lógica de negocio/sincronización (monitor `Lottery`).
+- `server/model/`: entidades y helpers provistos (por ejemplo `Bet`, `LotteryWinner`, `store_bets/load_bets/has_won`).
+- `server/common/`: utilidades compartidas (por ejemplo `OpCode`).
 
 <a id="condiciones-de-entrega"></a>
 ## Condiciones de Entrega
