@@ -323,19 +323,19 @@ Se implementó un protocolo **binario** simple y explícito (Big Endian) para ev
 
 La comunicación se modela como una secuencia de:
 
-1. **Cliente → Servidor:** `action` + payload.
+1. **Cliente → Servidor:** `OpCode` + payload.
 2. **Servidor → Cliente:** ACK de registro.
 
-**Acciones**
+**OpCodes**
 
-- El primer byte del mensaje es un `action` que indica qué operación se quiere ejecutar.
+- El primer byte del mensaje es un `OpCode` (opcode) que indica qué operación se quiere ejecutar (no confundir con el campo `action:` de los logs).
 - Para Ej5 se definió `REGISTER_SINGLE_BET = 0x01`.
 
 **Formato del mensaje `REGISTER_SINGLE_BET`**
 
 El cliente envía, en este orden:
 
-1. `action`: `uint8` (1 byte)
+1. `opCode`: `uint8` (1 byte)
 2. `agency`: `uint32` (4 bytes)
 3. `first_name`: `uint8 len` + `len` bytes UTF-8
 4. `last_name`: `uint8 len` + `len` bytes UTF-8
@@ -360,7 +360,7 @@ Este diseño hace que el stream sea auto-delimitado: los strings incluyen su lon
 	- Se agregaron tests unitarios del layout del paquete en `client/common/protocol/protocol_test.go` (verifica orden y tamaños de campos).
 
 - **Servidor:** `server/common/protocol.py`
-	- Interpreta el `action` (1 byte) y luego consume el payload.
+	- Interpreta el `opCode` (1 byte) y luego consume el payload.
 	- Implementa `_read_exactly(n)` para evitar **short reads**: si `recv()` retorna menos bytes de los esperados, sigue leyendo hasta completar o detectar EOF.
 	- Para strings lee primero 1 byte de longitud y luego exactamente esa cantidad de bytes.
 	- Envía el ACK con `sendall` para evitar **short writes**.
