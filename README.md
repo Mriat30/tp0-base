@@ -217,6 +217,58 @@ De esta forma, `validar-echo-server.sh` permite verificar rápidamente desde el 
 ### Ejercicio N°4:
 Modificar servidor y cliente para que ambos sistemas terminen de forma _graceful_ al recibir la signal SIGTERM. Terminar la aplicación de forma _graceful_ implica que todos los _file descriptors_ (entre los que se encuentran archivos, sockets, threads y procesos) deben cerrarse correctamente antes que el thread de la aplicación principal muera. Loguear mensajes en el cierre de cada recurso (hint: Verificar que hace el flag `-t` utilizado en el comando `docker compose down`).
 
+#### Desarrollo realizado
+
+Para este ejercicio se implementó un mecanismo de apagado _graceful_ en **servidor** y **cliente** frente a `SIGTERM` (la señal que envía Docker al frenar containers). La idea general es:
+
+- Señalizar a la aplicación que debe dejar de trabajar.
+- Evitar quedar bloqueado indefinidamente esperando I/O.
+- Cerrar sockets abiertos (tanto el socket de escucha como el socket del cliente), dejando el proceso en un estado consistente.
+- Loguear el progreso del apagado para poder verificarlo por `docker compose logs`.
+
+##### Servidor (Python)
+
+La lógica está encapsulada en la clase `Server` y el loop de aceptación de conexiones. Los puntos relevantes son:
+
+- **Handler de SIGTERM:** se registra `signal.signal(signal.SIGTERM, ...)` y al recibir la señal se loguea `action: graceful_shutdown | result: in_progress` y se setea el flag `_should_be_running = False`.
+- **Salida del loop sin bloqueo (por qué hay timeout):**
+	- `accept()` es una llamada **bloqueante**: si el servidor queda “idle” (no llegan clientes) se quedaría esperando indefinidamente una nueva conexión.
+	- El handler de `SIGTERM` solo setea un flag (`_should_be_running = False`). Para que ese cambio tenga efecto, el server tiene que volver a ejecutar el `while` y evaluar la condición.
+	- Por eso el socket de escucha se configura con `settimeout(...)` (por defecto 2s): así `accept()` deja de ser “espera infinita” y pasa a **despertar periódicamente** levantando `socket.timeout`.
+	- Cada vez que vence el timeout, el servidor vuelve al loop, re-chequea `_should_be_running` y, si ya recibió `SIGTERM`, puede salir del `while` y ejecutar el cierre.
+
+	En otras palabras: el timeout garantiza que si se mandó `SIGTERM` cuando no están entrando conexiones, el servidor no queda colgado esperando un `accept()` que nunca retorna; en cambio, como máximo en ~`accept_timeout` segundos vuelve al loop y confirma el apagado.
+- **Cierre de recursos:**
+	- El socket del cliente (si existe) se cierra en un único lugar (`__clear()`), intentando primero `shutdown(SHUT_RDWR)` y luego `close()`, y limpiando la referencia (`self.client = None`).
+	- El socket de escucha se cierra en `__stop()` con `self._server_socket.close()`.
+- **Manejo de errores en comunicación:** el `recv/send` de cada conexión está envuelto en `try/except OSError` y ante error se loguea `action: receive_message | result: fail | error: ...`, garantizando igualmente el cleanup en `finally`.
+
+##### Cliente (Go)
+
+La lógica está en el loop del cliente y un listener de señales:
+
+- **Listener de SIGTERM (goroutine + channels):**
+	- Se crea un channel `sigs := make(chan os.Signal, 1)`. El buffer de tamaño 1 evita que se pierda la señal si llega cuando todavía nadie está recibiendo.
+	- `signal.Notify(sigs, syscall.SIGTERM)` le dice al runtime: “cuando llegue `SIGTERM`, en vez de matar el proceso inmediatamente, entregá esa señal por el channel `sigs`”.
+	- Se lanza una goroutine que hace un receive bloqueante: `<-sigs`. Esa goroutine queda esperando sin consumir CPU.
+	- Cuando Docker envía `SIGTERM`, el runtime escribe un valor en el channel, el receive se desbloquea, y ahí se:
+		- Loguea `action: graceful_shutdown | result: in_progress`.
+		- Cambia el flag `should_be_running = false`.
+	- El loop principal del cliente evalúa ese flag en la condición del `for`, por lo que deja de iterar y no crea nuevas conexiones.
+
+	Este patrón separa responsabilidades: la goroutine solo “traduce” la señal a un cambio de estado, y el loop principal aplica el apagado de forma ordenada.
+- **Cierre de sockets:** el cliente abre una conexión TCP por iteración y la cierra explícitamente al terminar de leer la respuesta (`c.conn.Close()`), evitando acumular descriptores.
+- **Salida controlada del loop:** al bajar el flag `should_be_running`, el `for` deja de iterar y no se crean nuevas conexiones.
+
+##### Cómo verificar el apagado
+
+1. Levantar el entorno: `make docker-compose-up`.
+2. Ver logs: `make docker-compose-logs`.
+3. Abrir otra terminal y ejecutar: `make docker-compose-down`.
+4. Verificar en logs:
+	- Servidor: `action: graceful_shutdown | result: in_progress` y luego uno o más `action: graceful_shutdown | result: success`.
+	- Cliente: `action: graceful_shutdown | result: in_progress` y que deja de generar nuevas conexiones/mensajes.
+
 <a id="parte-2-repaso-de-comunicaciones"></a>
 ## Parte 2: Repaso de Comunicaciones
 
