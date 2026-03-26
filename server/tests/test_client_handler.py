@@ -11,19 +11,18 @@ class TestClientHandler(unittest.TestCase):
         self.mock_protocol = MagicMock()
         self.mock_protocol._socket = self.mock_socket
         self.mock_log = MagicMock()
-        self.mock_storage = MagicMock()
         self.mock_lottery = MagicMock()
-        self.handler = ClientHandler(self.mock_protocol, self.mock_storage, self.mock_lottery, logger=self.mock_log)
+        self.handler = ClientHandler(self.mock_protocol, self.mock_lottery, logger=self.mock_log)
         self.proto = self.mock_protocol
         self.proto.send_bet_registered = MagicMock()
 
     def _prepare_proto(self, action, return_val, is_batch=False):
         self.proto.read_action = MagicMock(side_effect=[OpCode.CLIENT_ID, action, EOFError])
-        
+
         def mock_read_client_id():
             self.proto._client_id = 1
             return 1
-        
+
         self.proto.read_client_id = MagicMock(side_effect=mock_read_client_id)
         if is_batch:
             self.proto.read_batch_of_bets = MagicMock(return_value=return_val)
@@ -33,10 +32,10 @@ class TestClientHandler(unittest.TestCase):
     def test_handle_single_bet_success(self):
         bet = Bet(1, "Juan", "Perez", "12345678", "1990-01-01", "7574")
         self._prepare_proto(OpCode.REGISTER_SINGLE_BET, bet)
-        
+
         self.handler.start()
-        
-        self.mock_storage.store.assert_called_once_with([bet])
+
+        self.mock_lottery.store.assert_called_once_with([bet])
         self.proto.send_bet_registered.assert_called_once()
         self.proto.close.assert_called_once()
 
@@ -49,7 +48,7 @@ class TestClientHandler(unittest.TestCase):
 
         self.handler.start()
 
-        self.mock_storage.store.assert_called_once_with(bets)
+        self.mock_lottery.store.assert_called_once_with(bets)
         self.proto.send_bet_registered.assert_called_once()
         self.proto.close.assert_called_once()
 
@@ -58,12 +57,12 @@ class TestClientHandler(unittest.TestCase):
             Bet(1, "Juan", "Perez", "12345678", "1990-01-01", "7574"),
             Bet(1, "Maria", "Gomez", "87654321", "1995-05-05", "1234"),
         ]
-        self.mock_storage.store.side_effect = OSError("Storage error")
+        self.mock_lottery.store.side_effect = OSError("Storage error")
         self._prepare_proto(OpCode.REGISTER_BATCH_OF_BETS, bets, is_batch=True)
 
         self.handler.start()
 
-        self.mock_storage.store.assert_called_once_with(bets)
+        self.mock_lottery.store.assert_called_once_with(bets)
         self.proto.send_bet_registered.assert_not_called()
         self.assertTrue(any("result: fail" in str(c) for c in self.mock_log.mock_calls))
         self.proto.close.assert_called()
@@ -74,10 +73,10 @@ class TestClientHandler(unittest.TestCase):
         self.handler.start()
 
         self.proto.read_client_id.assert_not_called()
-        self.mock_storage.store.assert_not_called()
+        self.mock_lottery.store.assert_not_called()
         self.proto.send_bet_registered.assert_not_called()
         self.assertTrue(any("result: fail" in str(c) for c in self.mock_log.mock_calls))
         self.proto.close.assert_called_once()
-            
+
 if __name__ == '__main__':
     unittest.main()

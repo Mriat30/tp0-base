@@ -2,11 +2,10 @@ from .protocol import OpCode
 import logging
 
 class ClientHandler:
-    def __init__(self, protocol, bet_storage, lottery, logger=None):
+    def __init__(self, protocol, lottery, logger=None):
         self._protocol = protocol
         self._should_be_running = False
         self._logger = logger or logging.getLogger(__name__)
-        self._bet_storage = bet_storage
         self._lottery = lottery
         self._client_id = None
 
