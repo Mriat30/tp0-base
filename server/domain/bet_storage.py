@@ -15,6 +15,10 @@ class BetStorage:
             if len(self._buffer) >= self._buffer_size:
                 self._flush_locked()
 
+    def load(self):
+        with self._lock:
+            return list(load_bets())
+
     def flush(self):
         with self._lock:
             self._flush_locked()
